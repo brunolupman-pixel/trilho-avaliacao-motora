@@ -32,7 +32,7 @@ métricas, o banco, o relatório e os jogos são os mesmos.
 
 | Carro (C) | Vidro (A) | Bolo (B) |
 |---|---|---|
-| ![carro](trilho-avaliacao/docs/carro.png) | ![vidro](trilho-avaliacao/docs/vidro.png) | ![bolo](trilho-avaliacao/docs/bolo.png) |
+| ![carro](trilho-avaliacao-motora/docs/carro.png) | ![vidro](trilho-avaliacao-motora/docs/vidro.png) | ![bolo](trilho-avaliacao-motora/docs/bolo.png) |
 
 ## Como usar
 
