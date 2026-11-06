@@ -1,8 +1,5 @@
 # Trilho — Sistema de Avaliação Motora com Joysticks em Trilho
 
-Implementação do software descrito no documento de arquitetura
-*"Arquitetura — Sistema de Avaliação Motora com Joysticks em Trilho"* (04/11/2026).
-
 O hardware ainda não existe, então tudo foi construído e validado contra um
 **simulador fiel da bancada** (IMU com deriva de relógio, LM393 com histerese,
 atraso e disparos espúrios, VL53L0X, HX711, rádio com atraso variável). Quando
@@ -35,7 +32,7 @@ métricas, o banco, o relatório e os jogos são os mesmos.
 
 | Carro (C) | Vidro (A) | Bolo (B) |
 |---|---|---|
-| ![carro](docs/carro.png) | ![vidro](docs/vidro.png) | ![bolo](docs/bolo.png) |
+| ![carro](trilho-avaliacao/docs/carro.png) | ![vidro](trilho-avaliacao/docs/vidro.png) | ![bolo](trilho-avaliacao/docs/bolo.png) |
 
 ## Como usar
 
