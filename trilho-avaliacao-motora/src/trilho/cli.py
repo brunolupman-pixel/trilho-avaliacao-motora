@@ -227,6 +227,11 @@ def cmd_jogar(a) -> None:
     dif = Dificuldade(duracao_s=a.duracao, limite_forca_N=a.limite_forca, repeticoes=a.repeticoes)
     if a.entrada == "mouse":
         fonte = FonteMouse(cam)
+    elif a.entrada == "esp32":
+        if a.jogo != "bolo":
+            raise SystemExit("Por enquanto a ESP32 alimenta só o bolo (sensores IR da espiral).")
+        from .jogos.fonte_esp32 import FonteEsp32Espiral
+        fonte = FonteEsp32Espiral(cam, a.porta)
     else:
         r = simular_partida(cam, 8 if not cam.vai_e_volta else 2,
                             PerfilPaciente(velocidade_media_mm_s=80), semente=a.semente)
@@ -281,7 +286,8 @@ def main(argv: list[str] | None = None) -> None:
 
     s = sub.add_parser("jogar", help="abre um mini-game")
     s.add_argument("--jogo", default="carro", choices=["carro", "vidro", "bolo"])
-    s.add_argument("--entrada", default="simulada", choices=["simulada", "mouse"])
+    s.add_argument("--entrada", default="simulada", choices=["simulada", "mouse", "esp32"])
+    s.add_argument("--porta", help="porta da ESP32 (ex.: COM9); sem isto, procura sozinho")
     s.add_argument("--duracao", type=float, default=90.0)
     s.add_argument("--limite-forca", type=float, default=30.0)
     s.add_argument("--repeticoes", type=int, default=3)
