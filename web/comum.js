@@ -284,3 +284,33 @@ else Trilho.montarMarca();
 
 // aplica a preferência deste computador assim que a página carrega
 Trilho.aplicarBaixaVisao(Trilho.baixaVisao());
+
+// ---------------------------------------------------------------- tela cheia (F11)
+// No F11 do navegador, passar o mouse no alto da tela faz o navegador mostrar a barra dele (ou o
+// botão de sair da tela cheia) POR CIMA do cabeçalho do site, e os botões do cabeçalho deixam de
+// responder. Por isso o F11 aqui usa a tela cheia da própria página, que não mostra nada por cima.
+// Ao trocar de página o navegador sai da tela cheia; ela volta no primeiro clique da página nova.
+(function () {
+  const CHAVE = "trilho_tela_cheia";
+  const guardar = v => { try { sessionStorage.setItem(CHAVE, v); } catch (e) { /* sem armazenamento */ } };
+  const desejada = () => { try { return sessionStorage.getItem(CHAVE) === "1"; } catch (e) { return false; } };
+  let saindoDaPagina = false;
+  function entrar() {
+    const el = document.documentElement;
+    if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: "hide" }).catch(() => {});
+  }
+  Trilho.alternarTelaCheia = function () {
+    if (document.fullscreenElement) { guardar("0"); document.exitFullscreen().catch(() => {}); }
+    else { guardar("1"); entrar(); }
+  };
+  document.addEventListener("keydown", e => {
+    if (e.key === "F11") { e.preventDefault(); Trilho.alternarTelaCheia(); }
+  });
+  // saiu com Esc (ou pelo navegador): não volta sozinha; trocou de página: volta no primeiro clique
+  window.addEventListener("beforeunload", () => { saindoDaPagina = true; });
+  window.addEventListener("pagehide", () => { saindoDaPagina = true; });
+  document.addEventListener("fullscreenchange", () => {
+    if (!saindoDaPagina) guardar(document.fullscreenElement ? "1" : "0");
+  });
+  if (desejada()) document.addEventListener("pointerdown", entrar, { once: true, capture: true });
+})();
