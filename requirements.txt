@@ -1,0 +1,9 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+sqlalchemy>=2.0
+pyserial>=3.5
+numpy>=1.26
+scipy>=1.11
+pyarrow>=15
+cryptography>=42
+argon2-cffi>=23

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trilho — Equipe</title>
+<style>
+  :root { --fundo:#f4f6fb; --cartao:#fff; --texto:#1d2433; --suave:#667085; --linha:#e3e7ef; --azul:#2f6fed;
+          --azul-claro:#e8f0ff; --verde:#16a34a; --verde-claro:#e7f7ed; --vermelho:#dc2626; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--fundo); color:var(--texto); font-size:15px; }
+  .topo { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 28px; background:var(--cartao); border-bottom:1px solid var(--linha); }
+  .topo h1 { font-size:20px; margin:0; }
+  .topo .direita { display:flex; gap:14px; align-items:center; flex-wrap:wrap; font-size:14px; }
+  a.botao-link { color:var(--azul); font-weight:600; text-decoration:none; font-size:14px; }
+  .usuario-logado { color:var(--suave); }
+  .conteudo { max-width:1150px; margin:0 auto; padding:24px; display:flex; flex-direction:column; gap:20px; }
+  .cartao { background:var(--cartao); border:1px solid var(--linha); border-radius:16px; padding:20px; }
+  h2 { font-size:17px; margin:0 0 6px; font-weight:600; }
+  .nota { color:var(--suave); font-size:13px; margin:0 0 12px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:8px; border-bottom:1px solid var(--linha); vertical-align:middle; }
+  th { color:var(--suave); font-weight:600; font-size:13px; }
+  input, select { font:inherit; padding:8px 10px; border:1px solid var(--linha); border-radius:10px; background:#fff; }
+  button { font:inherit; cursor:pointer; border:0; border-radius:10px; padding:8px 14px; background:var(--azul); color:#fff; font-weight:600; }
+  button.secundario { background:var(--azul-claro); color:var(--azul); padding:6px 10px; font-size:13px; }
+  .grade-form { display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap:12px; align-items:end; }
+  .grade-form label { display:block; font-size:13px; color:var(--suave); margin-bottom:4px; }
+  .grade-form input, .grade-form select { width:100%; }
+  .selo { font-size:12px; padding:2px 8px; border-radius:99px; font-weight:600; }
+  .selo.ok { background:var(--verde-claro); color:var(--verde); }
+  .selo.off { background:#f1f2f4; color:var(--suave); }
+  .selo.aviso { background:#fff4e0; color:#b45309; }
+  .msg { font-size:14px; min-height:1.2em; margin-top:8px; }
+  .rolavel { overflow-x:auto; }
+  td.centro, th.centro { text-align:center; }
+  .senha-gerada { font-family:Consolas,monospace; background:var(--fundo); padding:2px 6px; border-radius:6px; }
+</style>
+</head>
+<body>
+<div class="topo"><h1>Equipe e acesso aos pacientes</h1><div class="direita" id="usuario"></div></div>
+<div class="conteudo">
+
+  <div class="cartao">
+    <h2>Novo profissional</h2>
+    <p class="nota">O profissional entra com o e-mail e a senha provisória e precisa trocá-la no primeiro acesso.</p>
+    <form class="grade-form" onsubmit="criar(event)">
+      <div><label>Nome completo</label><input id="n-nome" required></div>
+      <div><label>E-mail (login)</label><input id="n-email" type="email" required></div>
+      <div><label>Perfil</label>
+        <select id="n-perfil">
+          <option value="fisioterapeuta">Fisioterapeuta</option>
+          <option value="tecnico">Técnico (só calibração e equipamento)</option>
+          <option value="administrador">Administrador</option>
+        </select></div>
+      <div><label>Registro profissional</label><input id="n-registro" placeholder="Ex.: CREFITO"></div>
+      <div><label>Senha provisória</label><input id="n-senha" required></div>
+      <div><button type="button" class="secundario" onclick="$('n-senha').value = gerarSenha()">Gerar senha</button>
+           <button style="margin-left:6px">Cadastrar</button></div>
+    </form>
+    <div class="msg" id="msg-novo"></div>
+  </div>
+
+  <div class="cartao">
+    <h2>Profissionais</h2>
+    <div class="rolavel"><table id="usuarios"></table></div>
+    <div class="msg" id="msg-usuarios"></div>
+  </div>
+
+  <div class="cartao">
+    <h2>Quem atende cada paciente</h2>
+    <p class="nota">Fisioterapeutas só veem os pacientes marcados aqui. Quem cadastra um paciente fica vinculado a ele
+      automaticamente. Administradores veem todos.</p>
+    <div class="rolavel"><table id="vinculos"></table></div>
+    <div class="msg" id="msg-vinculos"></div>
+  </div>
+</div>
+
+<script src="/comum.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = Trilho.esc;
+const PERFIS = { administrador: "Administrador", fisioterapeuta: "Fisioterapeuta", tecnico: "Técnico" };
+let usuarios = [];
+
+function gerarSenha() {
+  const letras = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ", nums = "23456789";
+  const a = new Uint32Array(10); crypto.getRandomValues(a);
+  let s = ""; for (let i = 0; i < 8; i++) s += letras[a[i] % letras.length];
+  return s + nums[a[8] % nums.length] + nums[a[9] % nums.length];
+}
+function mensagem(id, texto, ok) { const m = $(id); m.style.color = ok ? "var(--verde)" : "var(--vermelho)"; m.innerHTML = texto; }
+
+async function criar(ev) {
+  ev.preventDefault();
+  const senha = $("n-senha").value;
+  try {
+    const u = await Trilho.api("POST", "/api/usuarios", { nome: $("n-nome").value, email: $("n-email").value,
+      perfil: $("n-perfil").value, registro_profissional: $("n-registro").value, senha_provisoria: senha });
+    mensagem("msg-novo", `${esc(u.nome)} cadastrado. Entregue o login <b>${esc(u.email)}</b> e a senha provisória
+      <span class="senha-gerada">${esc(senha)}</span> pessoalmente.`, true);
+    ev.target.reset();
+    carregar();
+  } catch (e) { mensagem("msg-novo", esc(e.message)); }
+}
+
+async function editar(uid, dados, texto) {
+  try { await Trilho.api("PATCH", `/api/usuarios/${uid}`, dados); mensagem("msg-usuarios", texto, true); carregar(); }
+  catch (e) { mensagem("msg-usuarios", esc(e.message)); carregar(); }
+}
+function redefinir(uid, nome) {
+  const s = gerarSenha();
+  if (!confirm(`Redefinir a senha de ${nome}? As sessões abertas dessa pessoa serão encerradas.`)) return;
+  editar(uid, { senha_provisoria: s }, `Nova senha provisória de ${esc(nome)}: <span class="senha-gerada">${esc(s)}</span>`);
+}
+
+async function carregar() {
+  usuarios = await Trilho.api("GET", "/api/usuarios");
+  const eu = Trilho.usuario ? Trilho.usuario.id : null;
+  $("usuarios").innerHTML = `<tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Registro</th><th>Último acesso</th><th>Situação</th><th></th></tr>` +
+    usuarios.map(u => `<tr>
+      <td>${esc(u.nome)}${u.id === eu ? " <small>(você)</small>" : ""}</td><td>${esc(u.email)}</td>
+      <td><select onchange="editar(${u.id}, {perfil: this.value}, 'Perfil alterado.')" ${u.id === eu ? "disabled" : ""}>
+        ${Object.entries(PERFIS).map(([k, v]) => `<option value="${k}" ${k === u.perfil ? "selected" : ""}>${v}</option>`).join("")}</select></td>
+      <td>${esc(u.registro_profissional || "—")}</td>
+      <td>${u.ultimo_login ? new Date(u.ultimo_login).toLocaleString("pt-BR").slice(0, 17) : "nunca"}</td>
+      <td>${!u.ativo ? '<span class="selo off">desativado</span>' : u.bloqueado ? '<span class="selo aviso">bloqueado</span>'
+            : u.deve_trocar_senha ? '<span class="selo aviso">senha provisória</span>' : '<span class="selo ok">ativo</span>'}</td>
+      <td style="white-space:nowrap">${u.id === eu ? "" : `
+        <button class="secundario" onclick="redefinir(${u.id}, '${esc(u.nome).replace(/'/g, "\\'")}')">Redefinir senha</button>
+        <button class="secundario" onclick="editar(${u.id}, {ativo: ${!u.ativo}}, '${u.ativo ? "Conta desativada." : "Conta reativada."}')">${u.ativo ? "Desativar" : "Reativar"}</button>`}</td>
+    </tr>`).join("");
+
+  const profs = usuarios.filter(u => u.ativo && u.perfil !== "tecnico");
+  const vins = await Trilho.api("GET", "/api/vinculos");
+  if (!vins.length) { $("vinculos").innerHTML = `<tr><td class="nota">Nenhum paciente cadastrado ainda.</td></tr>`; return; }
+  $("vinculos").innerHTML = `<tr><th>Paciente</th>${profs.map(p => `<th class="centro">${esc(p.nome)}<br><small>${PERFIS[p.perfil]}</small></th>`).join("")}</tr>` +
+    vins.map(v => `<tr><td>${esc(v.nome)}</td>${profs.map(p => `<td class="centro">
+      <input type="checkbox" data-paciente="${v.paciente_id}" data-usuario="${p.id}" ${v.usuarios.includes(p.id) ? "checked" : ""}
+             onchange="salvarVinculo(${v.paciente_id})"></td>`).join("")}</tr>`).join("");
+}
+async function salvarVinculo(pid) {
+  const ids = [...document.querySelectorAll(`input[data-paciente="${pid}"]:checked`)].map(i => +i.dataset.usuario);
+  try { await Trilho.api("PUT", `/api/vinculos/${pid}`, { usuario_ids: ids }); mensagem("msg-vinculos", "Vínculos salvos.", true); }
+  catch (e) { mensagem("msg-vinculos", esc(e.message)); carregar(); }
+}
+Trilho.montarUsuario("usuario", "/equipe").then(u => { if (u) carregar(); });
+</script>
+</body>
+</html>

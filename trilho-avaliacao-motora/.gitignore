@@ -1,7 +1,0 @@
-__pycache__/
-*.egg-info/
-.pytest_cache/
-dados_demo/
-build/
-firmware/build/
-.ruff_cache/

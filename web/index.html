@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trilho — Reabilitação</title>
+<style>
+  :root {
+    --fundo: #f4f6fb; --cartao: #ffffff; --texto: #1d2433; --suave: #667085;
+    --linha: #e3e7ef; --azul: #2f6fed; --azul-claro: #e8f0ff; --verde: #16a34a;
+    --verde-claro: #e7f7ed; --laranja: #f59e0b; --vermelho: #dc2626; --roxo: #7c3aed;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--fundo);
+         color: var(--texto); font-size: 16px; }
+  button { font: inherit; cursor: pointer; border: 0; border-radius: 10px; padding: 10px 18px;
+           background: var(--azul); color: #fff; font-weight: 600; }
+  button:hover { filter: brightness(1.08); }
+  button.secundario { background: var(--azul-claro); color: var(--azul); }
+  button.secundario.destaque { background: var(--azul); color: #fff; }
+  button.perigo { background: #fde8e8; color: var(--vermelho); }
+  button:disabled { opacity: .5; cursor: default; }
+  input, select { font: inherit; padding: 10px 12px; border: 1px solid var(--linha);
+                  border-radius: 10px; width: 100%; background: #fff; }
+  label { display: block; font-size: 14px; color: var(--suave); margin: 12px 0 4px; }
+  h1, h2, h3 { margin: 0; font-weight: 600; }
+  .tela { display: none; }
+  .tela.ativa { display: block; }
+
+  /* topo */
+  .logo { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 700; }
+  .logo span.ponto { width: 14px; height: 14px; border-radius: 50%; background: var(--azul);
+                     box-shadow: 18px 0 0 var(--verde), 36px 0 0 var(--laranja); margin-right: 40px; }
+  .topo { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px;
+          background: var(--cartao); border-bottom: 1px solid var(--linha); }
+  .topo .direita { display: flex; align-items: center; gap: 12px; }
+  .esp { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--suave); }
+  .esp .luz { width: 10px; height: 10px; border-radius: 50%; background: #c4c9d4; }
+  .esp.ok .luz { background: var(--verde); }
+  .esp.alerta .luz { background: var(--laranja); }
+  .selo-sim { font-size: 12px; padding: 3px 8px; border-radius: 99px; background: #f3e8ff; color: var(--roxo); font-weight: 600; }
+  a.botao-link { font-size: 14px; color: var(--azul); text-decoration: none; font-weight: 600; }
+  .usuario-logado { font-size: 14px; color: var(--suave); }
+  .conteudo { max-width: 1100px; margin: 0 auto; padding: 28px; }
+  .grade { display: grid; grid-template-columns: 300px 1fr; gap: 24px; }
+  .cartao { background: var(--cartao); border-radius: 16px; padding: 20px; border: 1px solid var(--linha); }
+  .cartao h2 { font-size: 18px; margin-bottom: 12px; }
+  .paciente { padding: 12px; border-radius: 10px; cursor: pointer; display: flex;
+              justify-content: space-between; align-items: center; }
+  .paciente:hover { background: var(--fundo); }
+  .paciente.sel { background: var(--azul-claro); color: var(--azul); font-weight: 600; }
+  .paciente small { color: var(--suave); font-weight: 400; }
+  .consentimento { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--suave); margin-top: 10px; }
+  .consentimento input { width: auto; margin-top: 2px; }
+  .jogos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+  .jogo-card { border: 2px solid var(--linha); border-radius: 16px; padding: 18px; background: #fff;
+               display: flex; flex-direction: column; gap: 8px; }
+  .jogo-card .icone { height: 90px; border-radius: 12px; display: flex; align-items: center;
+                      justify-content: center; font-size: 44px; }
+  .jogo-card h3 { font-size: 17px; }
+  .jogo-card p { margin: 0; color: var(--suave); font-size: 14px; flex: 1; }
+  .etiqueta { font-size: 12px; padding: 3px 8px; border-radius: 99px; align-self: flex-start; font-weight: 600; }
+  .etiqueta.real { background: var(--verde-claro); color: var(--verde); }
+  .etiqueta.demo { background: #fff4e0; color: #b45309; }
+  .config { display: flex; gap: 8px; }
+  .config > div { flex: 1; }
+  .config label { margin-top: 4px; font-size: 12px; }
+  .config input { padding: 6px 8px; }
+  .vazio { color: var(--suave); text-align: center; padding: 30px 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--linha); }
+  th { color: var(--suave); font-weight: 600; }
+  .linha-titulo { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .estrelas { color: var(--laranja); letter-spacing: 2px; }
+  .erro-campo { color: var(--vermelho); font-size: 13px; margin-top: 6px; min-height: 1em; }
+
+  /* jogo */
+  #tela-jogo.ativa { display: flex; flex-direction: column; height: 100vh; background: #101828; }
+  .barra-jogo { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px;
+                color: #fff; gap: 16px; }
+  .placar { display: flex; gap: 28px; font-size: 18px; }
+  .placar b { font-size: 26px; display: block; }
+  .placar small { color: #98a2b3; font-size: 13px; }
+  #canvas-jogo { flex: 1; width: 100%; display: block; }
+
+  /* fim */
+  .fundo-modal { position: fixed; inset: 0; background: rgba(16,24,40,.6); display: none;
+                 align-items: center; justify-content: center; }
+  .fundo-modal.ativa { display: flex; }
+  .modal { background: #fff; border-radius: 20px; padding: 32px; width: 520px; text-align: center;
+           max-height: 92vh; overflow-y: auto; }
+  .modal .grande { font-size: 56px; font-weight: 700; color: var(--azul); margin: 8px 0; }
+  .modal .estrelas { font-size: 40px; }
+  .modal table { margin: 16px 0; }
+  .modal .fim-aba { background: transparent; color: var(--azul); border: 1px solid #d0d5dd; padding: 6px 14px;
+                    font-size: 14px; font-weight: 600; margin: 0 0 12px; }
+  .modal .fim-aba:hover { background: #f2f4f7; }
+  #fim-detalhes { text-align: left; border-top: 1px solid #eaecf0; margin-bottom: 12px; max-height: 40vh; overflow-y: auto; }
+  #fim-detalhes table { margin: 10px 0; width: 100%; font-size: 14px; color: var(--suave); }
+  .modal td:last-child { text-align: right; font-weight: 600; }
+  .modal h3 { text-align: left; font-size: 15px; color: var(--suave); margin-top: 8px; }
+  .modal .nota { font-size: 12px; color: var(--suave); text-align: left; }
+  /* tutorial antes do jogo */
+  #modal-tutorial .modal { width: min(1040px, 94vw); padding: 28px 32px; text-align: left; }
+  .tut-topo { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .tut-topo .icone { font-size: 40px; width: 64px; height: 64px; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
+  .tut-topo h2 { margin: 0; font-size: 28px; }
+  .tut-topo small { color: var(--suave); font-size: 14px; }
+  .tut-corpo { display: grid; grid-template-columns: 1.35fr 1fr; gap: 24px; align-items: start; }
+  .tut-demo { position: relative; border-radius: 14px; overflow: hidden; background: #101828; aspect-ratio: 16 / 10; }
+  .tut-demo canvas { width: 100%; height: 100%; display: block; }
+  .tut-demo .selo { position: absolute; right: 10px; bottom: 10px; background: rgba(0,0,0,.6); color: #fff; font-size: 12px;
+    padding: 3px 10px; border-radius: 999px; }
+  .tut-passos { list-style: none; padding: 0; margin: 0; counter-reset: passo; }
+  .tut-passos li { counter-increment: passo; display: grid; grid-template-columns: 40px 1fr; gap: 12px; margin-bottom: 16px;
+    font-size: 18px; line-height: 1.35; }
+  .tut-passos li::before { content: counter(passo); width: 36px; height: 36px; border-radius: 50%; background: var(--azul);
+    color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .tut-passos b { color: #101828; }
+  .tut-rodape { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 18px; flex-wrap: wrap; }
+  .tut-rodape label { display: flex; align-items: center; gap: 8px; font-size: 15px; color: #344054; cursor: pointer; }
+  .tut-rodape label input { width: 18px; height: 18px; margin: 0; }
+  .tut-rodape .botoes { display: flex; gap: 10px; }
+  .tut-rodape .botoes button { width: auto; padding: 12px 26px; font-size: 17px; }
+  .como-jogar { background: none; border: none; color: var(--azul); font-size: 13px; font-weight: 600; padding: 2px 0;
+    width: auto; cursor: pointer; text-align: left; }
+  .como-jogar:hover { text-decoration: underline; background: none; }
+  @media (max-width: 820px) { .tut-corpo { grid-template-columns: 1fr; } }
+  body.baixa-visao #modal-tutorial .modal, #modal-tutorial.bv .modal { border: 4px solid #000; }
+  #modal-tutorial.bv .tut-passos li { font-size: 24px; color: #000; }
+  #modal-tutorial.bv .tut-passos li::before { background: #000; color: #ffe600; width: 46px; height: 46px; font-size: 24px; }
+  #modal-tutorial.bv .tut-topo h2 { font-size: 36px; color: #000; }
+  #modal-tutorial.bv .tut-passos li { grid-template-columns: 52px 1fr; }
+  /* modo baixa visão nos jogos */
+  body.jogo-bv #tela-jogo.ativa { background: #000; }
+  body.jogo-bv .barra-jogo { border-bottom: 3px solid #fff; }
+  body.jogo-bv .placar { gap: 40px; }
+  body.jogo-bv .placar b { font-size: 46px; color: #ffe600; }
+  body.jogo-bv .placar small { font-size: 20px; color: #fff !important; font-weight: 700; }
+  body.jogo-bv #hud-fonte { display: none; }
+  body.jogo-bv #tela-jogo .barra-jogo button { font-size: 20px; padding: 12px 18px; background: #fff !important; color: #a30000 !important;
+                                    border: 3px solid #fff !important; }
+  body.jogo-bv #modal-fim .modal { zoom: 1.35; border: 4px solid #000; color: #000; }
+  body.jogo-bv #modal-fim .grande { color: #000; }
+  body.jogo-bv #modal-fim .estrelas { color: #b35c00; }
+  body.jogo-bv #modal-fim td { border-bottom: 2px solid #000; color: #000; }
+  body.jogo-bv #modal-fim button { font-size: 20px; background: #000; color: #fff; padding: 14px 22px; }
+  .opcao-bv { display: flex; gap: 8px; align-items: center; font-size: 14px; margin: 4px 0 12px; }
+  .opcao-bv input { width: auto; margin: 0; }
+  .opcao-bv select { width: auto; padding: 4px 8px; font-size: 14px; }
+  .controle-som { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.08); border-radius: 999px; padding: 4px 10px 4px 4px; }
+  .botao-som { width: 38px; height: 38px; padding: 0; border-radius: 50%; font-size: 18px; background: rgba(255,255,255,.12); }
+  .botao-som.desligado { background: rgba(220,38,38,.35); }
+  #hud-volume { width: 110px; accent-color: #60a5fa; margin: 0; padding: 0; }
+  body.jogo-bv .botao-som { width: 52px; height: 52px; font-size: 26px; background: #fff; }
+  body.jogo-bv #hud-volume { width: 150px; accent-color: #ffe600; }
+  .escolha-braco { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 14px; margin: 0 0 14px; }
+  .escolha-braco .rotulo { font-weight: 600; margin-right: 4px; }
+  .escolha-braco button { width: auto; padding: 7px 14px; border-radius: 999px; font-size: 14px; background: #f2f4f7;
+    color: var(--texto, #101828); border: 2px solid transparent; }
+  .escolha-braco button.ativo.acometido { background: #e8f0ff; border-color: #2f6fed; color: #1d4ed8; }
+  .escolha-braco button.ativo.sadio { background: #fff1e6; border-color: #f97316; color: #c2410c; }
+  .escolha-braco button:disabled { opacity: .45; cursor: not-allowed; }
+  .escolha-braco small { color: var(--suave, #667085); flex-basis: 100%; }
+  .braco-tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .braco-tag.acometido { background: #e8f0ff; color: #1d4ed8; }
+  .braco-tag.sadio { background: #fff1e6; color: #c2410c; }
+  .medida-viva { font-size: 44px; font-weight: 700; color: var(--azul); margin: 12px 0 4px; }
+  .passo-calib { color: var(--suave); margin: 4px 0 18px; }
+  .dica-sens { display: block; margin-top: 4px; color: var(--cinza, #667085); font-size: 12px; line-height: 1.3; }
+</style>
+</head>
+<body>
+
+<!-- ================= PAINEL ================= -->
+<div id="tela-painel" class="tela">
+  <div class="topo">
+    <div class="logo"><span class="ponto"></span>Trilho</div>
+    <div class="direita">
+      <span class="selo-sim" id="selo-sim" style="display:none">Simulador</span>
+      <div class="esp" id="esp-status"><span class="luz"></span><span id="esp-texto">Conectando ao servidor…</span></div>
+      <button class="secundario" id="btn-esp" onclick="Trilho.abrirConexaoEsp()" style="display:none">Conectar ESP32</button>
+      <span id="usuario" style="display:contents"></span>
+    </div>
+  </div>
+  <div class="conteudo grade">
+    <div class="cartao">
+      <h2>Pacientes</h2>
+      <div id="lista-pacientes"></div>
+      <button class="secundario" style="width:100%;margin-top:12px" onclick="location.href='/avaliacao?novo=1'">+ Novo paciente</button>
+      <p style="font-size:12px;color:var(--suave);margin:8px 0 0">O cadastro com a ficha clínica fica na área de avaliação.</p>
+    </div>
+    <div>
+      <div class="cartao">
+        <div class="linha-titulo">
+          <h2 id="titulo-paciente">Escolha um paciente</h2>
+          <button class="secundario" onclick="exportarCsv()">Exportar CSV</button>
+        </div>
+        <label class="opcao-bv" id="opcao-bv" style="display:none">
+          <input type="checkbox" id="chk-bv" onchange="salvarPreferencia('baixa_visao', this.checked)">
+          Modo baixa visão nos jogos deste paciente (letras maiores e mais contraste)</label>
+        <label class="opcao-bv" id="opcao-som" style="display:none">Sons nos jogos deste paciente:
+          <select id="sel-som" onchange="salvarPreferencia('som', this.value)">
+            <option value="todos">Todos os sons</option>
+            <option value="avisos">Só avisos importantes</option>
+            <option value="nenhum">Sem som</option>
+          </select></label>
+        <div class="escolha-braco" id="escolha-braco" style="display:none"></div>
+        <div class="jogos" id="cards-jogos"></div>
+      </div>
+      <div class="cartao" style="margin-top:24px">
+        <div class="linha-titulo">
+          <h2>Evolução</h2>
+          <select id="filtro-jogo" style="width:auto" onchange="desenharHistorico()">
+            <option value="vidro">Limpar a janela</option>
+            <option value="carro">Pilotar o carro</option>
+            <option value="bolo">Mexer a massa de bolo</option>
+          </select>
+        </div>
+        <canvas id="grafico" height="200" style="width:100%;margin-top:12px"></canvas>
+        <div id="tabela-historico"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= JOGO ================= -->
+<div id="tela-jogo" class="tela">
+  <div class="barra-jogo">
+    <div class="placar">
+      <div><small>Pontos</small><b id="hud-pontos">0</b></div>
+      <div><small>Combo</small><b id="hud-combo">x1</b></div>
+      <div><small>Tempo</small><b id="hud-tempo">0:00</b></div>
+      <div><small id="hud-obj-rotulo">Objetivo</small><b id="hud-obj">—</b></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span id="hud-fonte" style="color:#98a2b3;font-size:14px"></span>
+      <div class="controle-som">
+        <button id="hud-som" class="botao-som" onclick="alternarSom()" title="Ligar/desligar o som (tecla M)" aria-label="Som">🔊</button>
+        <input type="range" id="hud-volume" min="0" max="100" step="5" aria-label="Volume" title="Volume"
+          oninput="Som.salvarVolume(this.value / 100); if (Som.mudo && this.value > 0 && Som.modo !== 'nenhum') { Som.mudo = false; } atualizarBotaoSom()">
+      </div>
+      <button class="perigo" onclick="encerrarJogo('encerrado pelo profissional')">Encerrar (Esc)</button>
+    </div>
+  </div>
+  <canvas id="canvas-jogo"></canvas>
+</div>
+
+<div class="fundo-modal" id="modal-fim">
+  <div class="modal">
+    <h2 id="fim-titulo">Muito bem!</h2>
+    <div class="estrelas" id="fim-estrelas"></div>
+    <div class="grande" id="fim-pontos">0</div>
+    <div style="color:var(--suave)">pontos</div>
+    <table id="fim-metricas"></table>
+    <button type="button" class="fim-aba" id="fim-aba" onclick="alternarDetalhesFim()" aria-expanded="false" aria-controls="fim-detalhes">Ver detalhes da partida ▾</button>
+    <div id="fim-detalhes" hidden><table id="fim-metricas-extra"></table></div>
+    <div id="fim-movimento"></div>
+    <button onclick="fecharFim()">Voltar ao painel</button>
+  </div>
+</div>
+
+<div class="fundo-modal" id="modal-tutorial" role="dialog" aria-modal="true" aria-labelledby="tut-titulo">
+  <div class="modal">
+    <div class="tut-topo"><div class="icone" id="tut-icone"></div>
+      <div><h2 id="tut-titulo"></h2><small>Como jogar</small></div></div>
+    <div class="tut-corpo">
+      <div class="tut-demo"><canvas id="tut-canvas" width="1040" height="650"></canvas><span class="selo">demonstração</span></div>
+      <ol class="tut-passos" id="tut-passos"></ol>
+    </div>
+    <div class="tut-rodape">
+      <label id="tut-ocultar-rotulo"><input type="checkbox" id="tut-ocultar"> Não mostrar novamente para este paciente</label>
+      <div class="botoes">
+        <button class="secundario" onclick="fecharTutorial(false)">Voltar</button>
+        <button id="tut-comecar" onclick="fecharTutorial(true)">▶ Começar o jogo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="fundo-modal" id="modal-calib">
+  <div class="modal">
+    <h2>Calibrar o caminho reto</h2>
+    <div class="medida-viva" id="calib-dist">— mm</div>
+    <div class="passo-calib" id="calib-passo"></div>
+    <div id="calib-conferir" style="display:none;margin:-6px 0 18px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--suave)"><span>trás (paciente)</span><span>frente</span></div>
+      <div style="position:relative;height:26px;border-radius:13px;background:var(--fundo);border:1px solid var(--linha);overflow:hidden">
+        <div style="position:absolute;left:42%;width:16%;top:0;bottom:0;background:#fff4e0"></div>
+        <div id="calib-barra" style="position:absolute;left:0;top:0;bottom:0;width:0;background:var(--azul);opacity:.75;transition:width .1s"></div>
+      </div>
+      <div id="calib-pct" style="font-weight:700;margin-top:6px"></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="secundario" onclick="fecharCalib()">Cancelar</button>
+      <button class="secundario" id="calib-refazer" onclick="refazerCalib()" style="display:none">Refazer</button>
+      <button id="calib-btn" onclick="gravarCalib()">Gravar</button>
+    </div>
+  </div>
+</div>
+
+<script src="/comum.js"></script>
+<script>
+/* =====================================================================
+   DADOS — ficam no banco do servidor local (SQLite), pela API.
+   O navegador não guarda dados de pacientes.
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+let pacientes = [];      // lista vinda do servidor
+let pacienteSel = null;
+let calibReto = null;    // calibração do VL53L0X (servidor)
+const cfgValores = {};   // valores digitados nos cartões (sobrevivem ao redesenho)
+
+// Login: comum.js manda para a tela de login se a sessão acabar.
+const api = (metodo, url, corpo) => Trilho.api(metodo, url, corpo);
+function mostrarTela(id) {
+  document.querySelectorAll(".tela").forEach(t => t.classList.remove("ativa"));
+  $(id).classList.add("ativa");
+}
+function escapar(t) { return String(t).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* =====================================================================
+   PAINEL
+   ===================================================================== */
+const JOGOS = {
+  vidro: { nome: "Limpar a janela", caminho: "Guarda-chuva", joystick: "A", icone: "🪟", cor: "#e8f0ff",
+           desc: "Gire o punho de ponta a ponta para limpar o vidro.", objetivo: "Segundos",
+           padrao: 90 },
+  carro: { nome: "Pilotar o carro", caminho: "Reto", joystick: "C", icone: "🚗", cor: "#e7f7ed",
+           desc: "Acelere e freie para ficar na velocidade das placas.", objetivo: "Segundos",
+           padrao: 60 },
+  bolo:  { nome: "Mexer a massa de bolo", caminho: "Espiral", joystick: "B", icone: "🥣", cor: "#fff1e0",
+           desc: "Mexa a massa da borda até o centro e volte, sem respingar.", objetivo: "Idas e voltas",
+           padrao: 3 },
+};
+
+async function abrirPainel() {
+  mostrarTela("tela-painel");
+  await Promise.all([carregarPacientes(), carregarCalibReto(), carregarGeometria()]);
+  desenharPacientes();
+  desenharCards();
+  desenharHistorico();
+  atualizarStatusHw();
+}
+async function carregarPacientes() {
+  try { pacientes = await api("GET", "/api/pacientes"); } catch { /* servidor fora: mantém a lista anterior */ }
+}
+async function carregarCalibReto() {
+  try { calibReto = await api("GET", "/api/calibracoes/reto"); } catch { /* idem */ }
+}
+function desenharPacientes() {
+  const lista = $("lista-pacientes");
+  if (!pacientes.length) { lista.innerHTML = '<div class="vazio">Nenhum paciente vinculado a você.</div>'; return; }
+  lista.innerHTML = pacientes.map(p =>
+    `<div class="paciente ${p.id === pacienteSel ? "sel" : ""}" onclick="selecionarPaciente(${p.id})" ondblclick="location.href='/avaliacao?paciente=${p.id}'" title="Clique duas vezes para abrir a ficha">
+      <span>${escapar(p.nome)}<br><small>lado ${escapar(p.lado)}</small></span><small>${p.n_partidas} partidas</small></div>`
+  ).join("");
+}
+function selecionarPaciente(id) { pacienteSel = id; membroSel = "acometido"; desenharPacientes(); desenharCards(); desenharHistorico(); }
+// Braço que vai jogar: o acometido (padrão) ou o sadio, para comparar os dois lados do mesmo paciente.
+let membroSel = "acometido";
+const COR_BRACO = { acometido: "#2f6fed", sadio: "#f97316" };
+const OPOSTO = { direito: "esquerdo", esquerdo: "direito" };
+function ladoDoBraco(p, membro) { return membro === "sadio" ? OPOSTO[p.lado] : p.lado; }
+function escolherBraco(m) { membroSel = m; desenharCards(); }
+function desenharEscolhaBraco(p) {
+  const el = $("escolha-braco");
+  el.style.display = p ? "" : "none";
+  if (!p) return;
+  const temSadio = !!OPOSTO[p.lado];
+  if (!temSadio) membroSel = "acometido";
+  el.innerHTML = `<span class="rotulo">Braço desta partida:</span>
+    <button class="${membroSel === "acometido" ? "ativo " : ""}acometido" onclick="escolherBraco('acometido')">Acometido (${escapar(p.lado)})</button>
+    <button class="${membroSel === "sadio" ? "ativo " : ""}sadio" ${temSadio ? "" : "disabled"} onclick="escolherBraco('sadio')">Sadio${temSadio ? ` (${OPOSTO[p.lado]})` : ""}</button>
+    ${temSadio ? "" : "<small>Acometimento bilateral: não há braço sadio para comparar.</small>"}`;
+}
+function pacienteAtual() { return pacientes.find(p => p.id === pacienteSel); }
+function prefs() { const p = pacienteAtual(); return (p && p.preferencias) || {}; }
+function zonaAtual() { return prefs().zona_cm || 1.5; }
+function toleranciaCombo() { return prefs().tolerancia_combo_s || 1.5; }
+function margemVelocidade() { return prefs().margem_velocidade_kmh || 10; }
+// bolo: a colher andando mais rápido que isto (fração do caminho por segundo, ~320 mm/s) não é
+// movimento da mão: é a posição sendo corrigida de uma vez (sensor acionado à toa, contagem
+// refeita). Esse trecho não pontua, não conta para chegar ao centro e não respinga.
+const BOLO_SALTO = 0.45;
+// parte do caminho que precisa ser percorrida de verdade (sem saltos) em cada ida ou volta
+const BOLO_PERCURSO_MIN = 0.6;
+// Chegada ao centro e volta à borda, por aproximação: depois do último feixe IR (centro, a ~91% do
+// caminho) e antes do primeiro (borda, a ~9%) não há sensor, então basta chegar perto da ponta.
+const BOLO_CENTRO = 0.92, BOLO_BORDA = 0.07;
+// bolo: velocidade (fração do caminho por segundo) a partir da qual a massa respinga
+const RESPINGO = { baixa: { limite: 0.18, nome: "Baixa" }, normal: { limite: 0.12, nome: "Normal" },
+                   alta: { limite: 0.08, nome: "Alta" } };
+// janela: quanto de sujeira cada passada tira
+const LIMPEZA = { baixa: { fator: 0.6, nome: "Baixa" }, normal: { fator: 1.0, nome: "Normal" },
+                  alta: { fator: 1.7, nome: "Alta" } };
+function sensRespingo() { return RESPINGO[prefs().sensibilidade_respingo] ? prefs().sensibilidade_respingo : "normal"; }
+// janela: quanto o punho gira (em graus) para ir de uma ponta à outra do vidro. A partida começa com o
+// joystick na ponta esquerda do arco; o vidro inteiro cabe nesse giro (não precisa percorrer o arco todo).
+const GIROS_JANELA = [45, 60, 65, 70, 90, 180];
+function giroJanela() { const g = +prefs().giro_janela_graus; return GIROS_JANELA.includes(g) ? g : 65; }
+function sensLimpeza() { return LIMPEZA[prefs().sensibilidade_limpeza] ? prefs().sensibilidade_limpeza : "normal"; }
+function seletorSens(id, tabela, atual, chave) {
+  return `<select id="${id}" style="padding:6px 8px" onchange="salvarPreferencia('${chave}', this.value)">
+    ${Object.entries(tabela).map(([k, v]) => `<option value="${k}" ${k === atual ? "selected" : ""}>${v.nome}</option>`).join("")}</select>`;
+}
+async function salvarPreferencia(chave, valor) {
+  const p = pacienteAtual(); if (!p) return;
+  p.preferencias = { ...(p.preferencias || {}), [chave]: valor };
+  try { await api("PATCH", `/api/pacientes/${p.id}/preferencias`, { [chave]: valor }); } catch (e) { alert(e.message); }
+}
+function mudarZona(v) { salvarPreferencia("zona_cm", +v); }
+function mudarTolerancia(v) { salvarPreferencia("tolerancia_combo_s", +v); }
+function mudarMargemVel(v) { salvarPreferencia("margem_velocidade_kmh", +v); }
+
+// O jogo pode usar os sensores? (senão, entra com o mouse em modo demonstração)
+function prontidao(id) {
+  const j = JOGOS[id];
+  if (!hw.servidor) return { ok: false, motivo: "servidor desligado" };
+  if (!hw.bancada.conectada) return { ok: false, motivo: "conecte a caixa" };
+  const js = hw.joysticks[j.joystick];
+  if (!js || !js.conectado) return { ok: false, motivo: hw.hardware === "caixa"
+    ? `IMU do joystick ${j.joystick} sem resposta (veja Calibração)` : `ligue o joystick ${j.joystick}` };
+  if (js.carregando) return { ok: false, motivo: `joystick ${j.joystick} no carregador` };
+  if (!js.sincronia || !js.sincronia.valido) return { ok: false, motivo: "sincronizando o relógio" };
+  if (id === "carro" && !vl53Ativo()) return { ok: false, motivo: "sensor do reto sem leitura" };
+  return { ok: true };
+}
+
+function desenharCards() {
+  const p = pacienteAtual();
+  $("titulo-paciente").textContent = p ? `Jogos para ${p.nome}` : "Escolha um paciente";
+  $("opcao-bv").style.display = p ? "" : "none";
+  $("opcao-som").style.display = p ? "" : "none";
+  $("sel-som").value = (p && p.preferencias && p.preferencias.som) || "todos";
+  desenharEscolhaBraco(p);
+  $("chk-bv").checked = !!(p && p.preferencias && p.preferencias.baixa_visao);
+  $("cards-jogos").innerHTML = Object.entries(JOGOS).map(([id, j]) => {
+    const pr = prontidao(id), real = pr.ok;
+    const valor = cfgValores[id] ?? j.padrao;
+    return `<div class="jogo-card">
+      <div class="icone" style="background:${j.cor}">${j.icone}</div>
+      <h3>${j.nome}</h3>
+      <span class="etiqueta ${real ? "real" : "demo"}">${real ? `Sensores (joystick ${j.joystick})` : `Mouse (${pr.motivo})`}</span>
+      <p>${j.desc}<br><small>Caminho: ${j.caminho}</small><br>
+        <button class="como-jogar" onclick="abrirTutorial('${id}', false)">Como jogar?</button></p>
+      <div class="config"><div><label>${j.objetivo}</label>
+        <input type="number" id="cfg-${id}" min="1" value="${valor}" oninput="cfgValores['${id}'] = this.value"></div>
+        ${id === "carro" ? `<div><label>Zona neutra</label>
+          <select id="cfg-zona" style="padding:6px 8px" onchange="mudarZona(this.value)">
+            ${[1.0, 1.5, 2.0, 2.5].map(z => `<option value="${z}" ${z === zonaAtual() ? "selected" : ""}>${z.toFixed(1)} cm</option>`).join("")}
+          </select></div>` : ""}</div>
+      ${id === "bolo" ? `<div class="config"><div><label>Sensibilidade ao respingo</label>
+          ${seletorSens("cfg-respingo", RESPINGO, sensRespingo(), "sensibilidade_respingo")}
+          <small class="dica-sens">Alta: respinga mesmo mexendo devagar. Baixa: aceita mexer mais rápido.</small></div></div>` : ""}
+      ${id === "vidro" ? `<div class="config"><div><label>Sensibilidade da limpeza</label>
+          ${seletorSens("cfg-limpeza", LIMPEZA, sensLimpeza(), "sensibilidade_limpeza")}
+          <small class="dica-sens">Alta: limpa com menos passadas. Baixa: precisa de mais passadas.</small></div></div>
+        <div class="config"><div><label>Giro do punho para cruzar a janela</label>
+          <select id="cfg-giro" style="padding:6px 8px" onchange="salvarPreferencia('giro_janela_graus', +this.value)">
+            ${GIROS_JANELA.map(g => `<option value="${g}" ${g === giroJanela() ? "selected" : ""}>${g === 180 ? "Arco inteiro" : g + "°"}</option>`).join("")}
+          </select>
+          <small class="dica-sens">Giro, a partir da ponta esquerda, que leva o pano até a outra ponta do vidro.</small></div></div>` : ""}
+      ${id === "carro" ? `<div class="config"><div><label>Margem de pontuação (faixa verde em torno da placa)</label>
+          <select id="cfg-margem-vel" style="padding:6px 8px" onchange="mudarMargemVel(this.value)">
+            ${[5, 10, 15, 20].map(m => `<option value="${m}" ${m === margemVelocidade() ? "selected" : ""}>± ${m} km/h</option>`).join("")}
+          </select></div></div>
+        <div class="config"><div><label>Tolerância do combo (tempo fora da velocidade)</label>
+          <select id="cfg-tolerancia" style="padding:6px 8px" onchange="mudarTolerancia(this.value)">
+            ${[1, 1.5, 2, 3].map(s => `<option value="${s}" ${s === toleranciaCombo() ? "selected" : ""}>${String(s).replace(".", ",")} s</option>`).join("")}
+          </select></div></div>` : ""}
+      ${id === "carro" && vl53Ativo() ? `<button class="secundario" style="padding:6px" onclick="abrirCalib()">${calibReto ? "Recalibrar" : "Calibrar"} sensor</button>` : ""}
+      <button ${p ? "" : "disabled"} onclick="iniciarJogo('${id}')">▶ Jogar</button>
+    </div>`;
+  }).join("");
+}
+
+let historicoPedido = 0;
+async function desenharHistorico() {
+  const jogo = $("filtro-jogo").value;
+  const pedido = ++historicoPedido;
+  let sess = [];
+  if (pacienteSel) {
+    try { sess = await api("GET", `/api/pacientes/${pacienteSel}/historico?jogo=${jogo}`); } catch { sess = []; }
+  }
+  if (pedido !== historicoPedido) return;   // chegou resposta de um pedido mais novo
+  const cv = $("grafico");
+  const ctx = cv.getContext("2d");
+  const W = cv.width = cv.clientWidth * devicePixelRatio, H = cv.height = 200 * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const w = W / devicePixelRatio, h = 200;
+  ctx.clearRect(0, 0, w, h);
+  ctx.font = "13px Segoe UI, sans-serif";
+  if (sess.length === 0) {
+    ctx.fillStyle = "#667085"; ctx.textAlign = "center";
+    ctx.fillText(pacienteSel ? "Ainda não há partidas deste jogo." : "Escolha um paciente para ver a evolução.", w / 2, h / 2);
+    $("tabela-historico").innerHTML = "";
+    return;
+  }
+  // Uma linha por braço no mesmo eixo do tempo: acometido em azul, sadio em laranja.
+  const max = Math.max(...sess.map(s => s.pontos), 10);
+  const temSadio = sess.some(s => s.membro === "sadio");
+  const x0 = 40, y0 = temSadio ? 30 : 15, larg = w - 60, alt = h - 45 - (temSadio ? 15 : 0);
+  ctx.strokeStyle = "#e3e7ef"; ctx.fillStyle = "#667085"; ctx.textAlign = "right"; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = y0 + alt - alt * i / 4;
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + larg, y); ctx.stroke();
+    ctx.fillText(Math.round(max * i / 4), x0 - 6, y + 4);
+  }
+  const px = i => x0 + (sess.length === 1 ? larg / 2 : larg * i / (sess.length - 1));
+  const py = v => y0 + alt - alt * v / max;
+  for (const m of ["acometido", "sadio"]) {
+    const pts = sess.map((s, i) => ({ s, i })).filter(o => (o.s.membro || "acometido") === m);
+    if (!pts.length) continue;
+    ctx.strokeStyle = COR_BRACO[m]; ctx.lineWidth = 3; ctx.setLineDash(m === "sadio" ? [7, 5] : []); ctx.beginPath();
+    pts.forEach((o, k) => k ? ctx.lineTo(px(o.i), py(o.s.pontos)) : ctx.moveTo(px(o.i), py(o.s.pontos)));
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = COR_BRACO[m];
+    pts.forEach(o => {
+      ctx.beginPath();
+      if (m === "sadio") ctx.rect(px(o.i) - 5, py(o.s.pontos) - 5, 10, 10); else ctx.arc(px(o.i), py(o.s.pontos), 5, 0, 7);
+      ctx.fill();
+    });
+  }
+  ctx.textAlign = "center"; ctx.fillStyle = "#667085";
+  const passo = Math.max(1, Math.ceil(sess.length / 12));
+  sess.forEach((s, i) => { if (i % passo === 0) ctx.fillText(new Date(s.data).toLocaleDateString("pt-BR").slice(0, 5), px(i), h - 8); });
+  if (temSadio) legendaBracos(ctx, x0, 14);
+  $("tabela-historico").innerHTML = `<table><tr><th>Data</th><th>Braço</th><th>Pontos</th><th>Estrelas</th><th>Entrada</th><th>Destaques</th></tr>` +
+    sess.slice().reverse().map(s => `<tr><td>${new Date(s.data).toLocaleString("pt-BR").slice(0, 17)}</td>
+      <td>${tagBraco(s)}</td>
+      <td>${s.pontos}</td><td class="estrelas">${"★".repeat(s.estrelas)}${"☆".repeat(3 - s.estrelas)}</td>
+      <td>${escapar(s.fonte)}</td><td>${escapar(s.destaque || "")}</td></tr>`).join("") + "</table>";
+}
+function tagBraco(s) {
+  const m = s.membro || "acometido";
+  return `<span class="braco-tag ${m}">${m === "sadio" ? "Sadio" : "Acometido"}${s.lado_braco ? " · " + escapar(s.lado_braco) : ""}</span>`;
+}
+function legendaBracos(ctx, x, y) {
+  ctx.font = "12px Segoe UI, sans-serif"; ctx.textAlign = "left";
+  ctx.fillStyle = COR_BRACO.acometido; ctx.beginPath(); ctx.arc(x + 5, y - 4, 5, 0, 7); ctx.fill();
+  ctx.fillStyle = "#344054"; ctx.fillText("Braço acometido", x + 14, y);
+  ctx.fillStyle = COR_BRACO.sadio; ctx.fillRect(x + 130, y - 9, 10, 10);
+  ctx.fillStyle = "#344054"; ctx.fillText("Braço sadio", x + 146, y);
+}
+
+function exportarCsv() { window.location.href = "/api/exportar.csv"; }
+
+/* =====================================================================
+   SENSORES — o navegador não fala com a ESP32. O servidor local lê a
+   bancada pela USB, sincroniza os relógios, faz a fusão dos sensores e
+   manda aqui, por WebSocket, o estado do joystick já processado
+   (~100 Hz durante a partida): posição no caminho (f, 0..1), velocidade,
+   status da bancada e dos joysticks.
+   ===================================================================== */
+const hw = { servidor: false, simulador: false, bancada: { conectada: false }, joysticks: {},
+             vl53: { ativo: false, dist_mm: null }, partida: null, tRecebido: 0 };
+let ws = null;
+function conectarWs() {
+  ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onmessage = ev => {
+    const m = JSON.parse(ev.data);
+    if (m.tipo === "config") hw.simulador = m.simulador;
+    else if (m.tipo === "estado") {
+      hw.bancada = m.bancada; hw.joysticks = m.joysticks; hw.vl53 = m.vl53;
+      hw.partida = m.partida; hw.simulador = m.simulador; hw.porta = m.porta; hw.tRecebido = performance.now();
+      hw.hardware = m.hardware; hw.imu = m.imu;
+    }
+    if (!hw.servidor) { hw.servidor = true; atualizarStatusHw(); }
+  };
+  ws.onclose = ev => {
+    if (ev.code === 4401) { location.href = "/login?volta=/"; return; }
+    hw.servidor = false; hw.partida = null; hw.bancada = { conectada: false };
+    atualizarStatusHw();
+    setTimeout(conectarWs, 1000);
+  };
+}
+function enviarWs(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
+function vl53Ativo() { return hw.servidor && !!(hw.vl53 && hw.vl53.ativo); }
+
+let assinaturaCards = "";
+setInterval(() => {   // redesenha os cartões quando a prontidão dos sensores muda
+  atualizarStatusHw();
+  const ass = JSON.stringify([Object.keys(JOGOS).map(id => prontidao(id)), vl53Ativo(), !!calibReto]);
+  if (ass !== assinaturaCards && $("tela-painel").classList.contains("ativa")) { assinaturaCards = ass; desenharCards(); }
+}, 1000);
+
+function atualizarStatusHw() {
+  const el = $("esp-status");
+  let txt, ok = false, alerta = false;
+  if (!hw.servidor) txt = "Servidor desligado — abra o programa Trilho";
+  else if (!hw.bancada.conectada) {
+    const pt = hw.porta || {};
+    txt = !pt.ligada ? "ESP32 desconectada pelo site"
+        : pt.aberta ? `Porta ${pt.aberta} aberta, sem resposta da caixa`
+        : pt.erro ? "ESP32 desconectada: " + pt.erro : "ESP32 desconectada";
+  } else {
+    const onde = hw.porta && hw.porta.aberta && !hw.simulador ? ` (${hw.porta.aberta})` : "";
+    if (hw.hardware === "caixa") {
+      const faltam = ["A", "B", "C"].filter(id => !(hw.imu && hw.imu[id] && hw.imu[id].ok));
+      ok = true; alerta = faltam.length > 0;
+      const zeros = faltam.filter(id => hw.imu[id] && hw.imu[id].so_zeros);
+      const mudos = faltam.filter(id => !zeros.includes(id));
+      txt = `Caixa conectada${onde} · ` + (!faltam.length ? "todos os sensores respondendo"
+        : [mudos.length ? `IMU sem resposta: ${mudos.join(", ")}` : "", zeros.length ? `IMU mandando só zeros: ${zeros.join(", ")} (confira os fios)` : ""]
+          .filter(Boolean).join(" · "));
+    } else {
+      const js = Object.entries(hw.joysticks).filter(([, j]) => j.conectado)
+        .map(([id, j]) => `${id} ${j.bateria_pct ?? "?"}%${j.carregando ? " (carregando)" : ""}`);
+      ok = true; alerta = !js.length;
+      txt = `Bancada conectada${onde} · ` + (js.length ? "joysticks " + js.join(", ") : "nenhum joystick ligado");
+    }
+  }
+  el.classList.toggle("ok", ok && !alerta);
+  el.classList.toggle("alerta", alerta);
+  $("esp-texto").textContent = txt;
+  $("btn-esp").style.display = hw.servidor ? "" : "none";
+  $("btn-esp").textContent = hw.bancada.conectada ? "Porta USB" : "Conectar ESP32";
+  $("btn-esp").classList.toggle("destaque", !hw.bancada.conectada);
+  $("selo-sim").style.display = hw.simulador ? "" : "none";
+}
+
+/* =====================================================================
+   FONTES DE ENTRADA: devolvem { f (0..1 ao longo do caminho), v (por s) }
+   ===================================================================== */
+class FonteMouse {
+  constructor(canvas) {
+    this.f = 0.5; this.ant = null; this.nome = "Mouse (demonstração)";
+    canvas.onmousemove = e => { const r = canvas.getBoundingClientRect(); this.f = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); };
+    canvas.onmousedown = canvas.onmouseup = null;
+  }
+  ler(t) {
+    let v = 0;
+    if (this.ant) v = (this.f - this.ant.f) / Math.max(1e-3, t - this.ant.t);
+    this.vs = this.vs === undefined ? v : this.vs + (v - this.vs) * 0.2;
+    this.ant = { t, f: this.f };
+    return { f: this.f, v: this.vs };
+  }
+}
+
+// Sensores reais (ou simulados) através do servidor.
+class FonteServidor {
+  // giroGraus (janela): giro do punho que cobre o vidro inteiro; o resto do arco não é necessário
+  constructor(canvas, giroGraus = null) {
+    this.giroGraus = giroGraus;
+    this.nome = hw.simulador ? "Simulador (o mouse guia o joystick)" : "Sensores da caixa";
+    this.ultimo = null;
+    canvas.onmousedown = canvas.onmouseup = null;
+    canvas.onmousemove = hw.simulador
+      ? e => { const r = canvas.getBoundingClientRect(); enviarWs({ tipo: "sim_alvo", f: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) }); }
+      : null;
+  }
+  ler() {
+    const p = hw.partida;
+    if (!p || p.f === undefined) return this.ultimo || { f: 0, v: 0, foraDoAlcance: false };
+    // o servidor já manda a posição prevista para "agora" e suavizada para a tela (~100 vezes por
+    // segundo); extrapolar de novo aqui com a velocidade (ruidosa) fazia a barra tremer
+    let f = Math.min(1, Math.max(0, p.f)), v = p.v_frac;
+    if (this.giroGraus && p.giro_total_graus) {
+      const ganho = Math.max(1, p.giro_total_graus / this.giroGraus);
+      f = Math.min(1, f * ganho); v = v * ganho;
+    }
+    this.ultimo = { f, v, foraDoAlcance: !!p.fora_do_alcance };
+    return this.ultimo;
+  }
+}
+
+/* ---------- tutorial antes do jogo ---------- */
+// Explicação curta para o paciente, com uma demonstração animada desenhada pelo próprio jogo.
+// "Não mostrar novamente" fica salvo por paciente e por jogo (preferência tutorial_oculto).
+const TUTORIAIS = {
+  vidro: [
+    "Gire o punho para levar o <b>pano</b> de uma ponta à outra da janela.",
+    "Vá <b>até as pontas</b>: passadas completas limpam mais e valem mais pontos.",
+    "Continue indo e voltando até o <b>vidro ficar limpo</b> ou o tempo acabar.",
+  ],
+  carro: [
+    "<b>Empurre</b> o joystick para a frente para <b>acelerar</b>. <b>Puxe</b> para trás para <b>frear</b>.",
+    "Deixe o ponteiro na <b>faixa verde</b>, a velocidade da placa. Na placa <b>PARE</b>, freie até parar.",
+    "Quanto mais tempo na <b>velocidade certa</b>, mais pontos e mais combo.",
+  ],
+  bolo: [
+    "Leve a <b>colher</b> pela espiral, da <b>borda até o centro</b>, e depois volte para a borda.",
+    "Mexa <b>devagar</b>: rápido demais a massa <b>respinga</b>.",
+    "Não pare por muito tempo, senão a massa <b>empelota</b>. Complete as idas e voltas.",
+  ],
+};
+// movimento automático da demonstração (posição de 0 a 1 ao longo do trilho)
+const DEMO_MOV = {
+  vidro: t => 0.5 + 0.46 * Math.sin(2 * Math.PI * 0.32 * t - Math.PI / 2),
+  bolo: t => { const u = (t * 0.07) % 2; return u < 1 ? u : 2 - u; },
+};
+let tutorial = null;
+function tutorialOculto(id) { return !!((prefs().tutorial_oculto || {})[id]); }
+function abrirTutorial(id, paraJogar) {
+  const j = JOGOS[id];
+  tutorial = { id, paraJogar, t: 0, tUlt: performance.now() / 1000, bvAntes: BV };
+  $("tut-titulo").textContent = j.nome;
+  $("tut-icone").textContent = j.icone; $("tut-icone").style.background = j.cor;
+  $("tut-passos").innerHTML = TUTORIAIS[id].map(p => `<li><span>${p}</span></li>`).join("");
+  $("tut-ocultar").checked = tutorialOculto(id);
+  $("tut-ocultar-rotulo").style.display = pacienteSel ? "" : "none";
+  $("tut-comecar").textContent = paraJogar ? "▶ Começar o jogo" : "▶ Jogar";
+  $("tut-comecar").disabled = !pacienteSel;
+  // com baixa visão, a demonstração e o texto seguem o modo do paciente
+  BV = !!(prefs().baixa_visao || Trilho.baixaVisao());
+  $("modal-tutorial").classList.toggle("bv", BV);
+  const cv = $("tut-canvas");
+  tutorial.jogo = new ({ bolo: JogoBolo, carro: JogoCarro, vidro: JogoVidro })[id](cv.width, cv.height, id === "bolo" ? 2 : 999,
+    { zonaCm: 1.5, zonaFrac: 0.25, toleranciaCombo: 1.5, margemVel: 10, respingo: "normal", limpeza: "normal" });
+  $("modal-tutorial").classList.add("ativa");
+  requestAnimationFrame(quadroTutorial);
+  setTimeout(() => $("tut-comecar").focus(), 50);
+}
+function quadroTutorial() {
+  if (!tutorial) return;
+  const agora = performance.now() / 1000, dt = Math.min(0.05, agora - tutorial.tUlt);
+  tutorial.tUlt = agora; tutorial.t += dt;
+  const t = tutorial.t, g = tutorial.jogo;
+  let f, v;
+  if (tutorial.id === "carro") {
+    // o "motorista" da demonstração leva a alavanca até a posição que dá a velocidade da placa
+    const alvo = g.alvo, zona = g.zona;
+    const fd = t < 1 ? 0.5 : alvo === 0 ? (g.vel > 3 ? 0.12 : 0.5) : 0.5 + (zona + 0.05 + alvo / 100 * (1 - zona)) / 2;
+    const fa = tutorial.fCarro ?? 0.5;
+    f = fa + (fd - fa) * Math.min(1, dt * 2.5); v = (f - fa) / Math.max(dt, 1e-3); tutorial.fCarro = f;
+  } else {
+    const mov = DEMO_MOV[tutorial.id];
+    f = mov(t); v = (mov(t + 0.02) - mov(t - 0.02)) / 0.04;
+  }
+  try {
+    g.passo({ f, v, foraDoAlcance: false }, dt, t);
+    if (g.terminou || t > 45) {   // recomeça a demonstração
+      const cv = $("tut-canvas");
+      tutorial.jogo = new g.constructor(cv.width, cv.height, tutorial.id === "bolo" ? 2 : 999, { zonaCm: 1.5, zonaFrac: 0.25, toleranciaCombo: 1.5, margemVel: 10 });
+      tutorial.t = 0; tutorial.fCarro = 0.5;
+    }
+    tutorial.jogo.desenhar($("tut-canvas").getContext("2d"));
+  } catch (e) { console.warn("demonstração", e); }
+  requestAnimationFrame(quadroTutorial);
+}
+async function fecharTutorial(jogar) {
+  if (!tutorial) return;
+  const { id, bvAntes } = tutorial;
+  const ocultar = $("tut-ocultar").checked;
+  tutorial = null;
+  BV = bvAntes;
+  $("modal-tutorial").classList.remove("ativa");
+  if (pacienteSel && ocultar !== tutorialOculto(id)) {
+    await salvarPreferencia("tutorial_oculto", { ...(prefs().tutorial_oculto || {}), [id]: ocultar });
+  }
+  if (jogar && pacienteSel) iniciarJogo(id, true);
+}
+document.addEventListener("keydown", e => { if (tutorial && e.key === "Escape") fecharTutorial(false); });
+
+/* ---------- calibração do caminho reto (VL53L0X, gravada no servidor) ---------- */
+let calib = null, calibTimer = null;
+function abrirCalib(depois) {
+  calib = { etapa: "tras", tras: null, frente: null, depois };
+  $("modal-calib").classList.add("ativa");
+  atualizarCalib();
+  calibTimer = setInterval(atualizarCalib, 100);
+}
+function distVl53() { return vl53Ativo() ? hw.vl53.dist_mm : null; }
+// 3 passos: ponta de trás (lado do paciente), ponta da frente e conferência com a barra ao vivo.
+// O sensor pode estar em qualquer ponta: a direção vem destas duas medidas.
+function atualizarCalib() {
+  const d = distVl53();
+  $("calib-dist").textContent = d === null ? "fora do alcance" : d + " mm";
+  const conf = calib.etapa === "conferir";
+  $("calib-conferir").style.display = conf ? "" : "none";
+  $("calib-refazer").style.display = conf ? "" : "none";
+  $("calib-btn").textContent = conf ? "Salvar calibração" : "Gravar";
+  if (calib.etapa === "tras")
+    $("calib-passo").innerHTML = "<b>1 de 3:</b> leve o joystick <b>TODO PARA TRÁS</b>, encostado na ponta do lado do <b>paciente</b>, e clique em Gravar.";
+  else if (calib.etapa === "frente")
+    $("calib-passo").innerHTML = `<b>2 de 3:</b> agora leve o joystick <b>TODO PARA A FRENTE</b>, na ponta mais <b>longe do paciente</b>, e clique em Gravar.<br><small>Trás gravado: ${calib.tras} mm</small>`;
+  else {
+    $("calib-passo").innerHTML = `<b>3 de 3: confira.</b> Empurre o joystick para a frente e puxe para trás. A barra deve ir para a
+      <b>direita</b> quando você <b>empurra</b> (acelerar) e para a esquerda quando <b>puxa</b> (frear).<br>
+      <small>Trás ${calib.tras} mm · frente ${calib.frente} mm</small>`;
+    const f = d === null ? null : Math.max(0, Math.min(1, (d - calib.tras) / (calib.frente - calib.tras)));
+    $("calib-barra").style.width = f === null ? "0" : (100 * f).toFixed(0) + "%";
+    $("calib-pct").textContent = f === null ? "sensor não vê o joystick" : f < 0.42 ? "freio" : f > 0.58 ? "acelera" : "meio (neutro)";
+  }
+  $("calib-btn").disabled = !conf && d === null;
+}
+function refazerCalib() { calib.etapa = "tras"; calib.tras = calib.frente = null; atualizarCalib(); }
+async function gravarCalib() {
+  const d = distVl53();
+  if (calib.etapa === "tras") { if (d === null) return; calib.tras = d; calib.etapa = "frente"; atualizarCalib(); return; }
+  if (calib.etapa === "frente") {
+    if (d === null) return;
+    if (Math.abs(d - calib.tras) < 40) {
+      alert("A diferença entre trás e frente ficou pequena demais (" + Math.abs(d - calib.tras) + " mm). Confira se o joystick foi mesmo até as duas pontas e se o sensor está vendo o joystick.");
+      return;
+    }
+    calib.frente = d; calib.etapa = "conferir"; atualizarCalib(); return;
+  }
+  try { calibReto = await api("POST", "/api/calibracoes/reto", { tras: calib.tras, frente: calib.frente }); }
+  catch (e) { alert(e.message); return; }
+  const depois = calib.depois;
+  fecharCalib();
+  desenharCards();
+  if (depois) depois();
+}
+function fecharCalib() { clearInterval(calibTimer); $("modal-calib").classList.remove("ativa"); calib = null; }
+
+/* =====================================================================
+   LAÇO DO JOGO
+   ===================================================================== */
+let jogoAtual = null, fonte = null, rodando = false, t0 = 0, tUlt = 0, jogoId = null;
+let partidaAtual = null, instrucao = "", eventosJogo = [];
+let somContagem = 0, somVai = false;
+let tInicioJogo = 3;   // o jogo começa depois da contagem 3-2-1
+
+async function iniciarJogo(id, tutorialVisto = false) {
+  if (!tutorialVisto && !tutorialOculto(id)) { abrirTutorial(id, true); return; }
+  if (id === "carro" && prontidao("carro").ok && !calibReto) { abrirCalib(() => iniciarJogo(id, true)); return; }
+  const alvo = Math.max(1, +$("cfg-" + id).value || JOGOS[id].padrao);
+  const sensores = prontidao(id).ok;
+  try {
+    partidaAtual = await api("POST", "/api/partidas", {
+      paciente_id: pacienteSel, jogo: id, fonte: sensores ? "sensores" : "mouse", membro: membroSel,
+      dificuldade: id === "carro" ? { objetivo: alvo, zona_cm: zonaAtual(),
+                                      tolerancia_combo_s: toleranciaCombo(), margem_velocidade_kmh: margemVelocidade() }
+                 : id === "bolo" ? { objetivo: alvo, sensibilidade_respingo: sensRespingo() }
+                 : { objetivo: alvo, sensibilidade_limpeza: sensLimpeza(), giro_janela_graus: giroJanela() } });
+  } catch (e) { alert("Não foi possível iniciar a partida: " + e.message); return; }
+  jogoId = id;
+  BV = !!(prefs().baixa_visao || Trilho.baixaVisao());
+  document.body.classList.toggle("jogo-bv", BV);
+  instrucao = partidaAtual.instrucao || "";
+  eventosJogo = [];
+  mostrarTela("tela-jogo");
+  const cv = $("canvas-jogo");
+  cv.width = cv.clientWidth; cv.height = cv.clientHeight;
+  fonte = partidaAtual.fonte === "sensores"
+    ? new FonteServidor(cv, id === "vidro" ? giroJanela() : null)
+    : new FonteMouse(cv);
+  tInicioJogo = 3;
+  // zona neutra: em fração da metade do curso (o servidor entrega a posição ao longo dos 120 mm do trilho)
+  const metadeCurso = 60;
+  const opcoes = { zonaCm: zonaAtual(), zonaFrac: Math.min(0.8, zonaAtual() * 10 / metadeCurso), toleranciaCombo: toleranciaCombo(), margemVel: margemVelocidade(),
+                   respingo: sensRespingo(), limpeza: sensLimpeza() };
+  jogoAtual = new ({ bolo: JogoBolo, carro: JogoCarro, vidro: JogoVidro })[id](cv.width, cv.height, alvo, opcoes);
+  $("hud-fonte").textContent = "Entrada: " + fonte.nome + ` · Braço ${partidaAtual.membro || "acometido"} (${partidaAtual.lado_braco || ""})`;
+  $("hud-obj-rotulo").textContent = JOGOS[id].objetivo;
+  rodando = true; t0 = performance.now() / 1000; tUlt = t0;
+  somContagem = 0; somVai = false;
+  Som.iniciar(prefs().som || "todos"); atualizarBotaoSom();
+  requestAnimationFrame(quadro);
+}
+function quadro() {
+  if (!rodando) return;
+  const agora = performance.now() / 1000, dt = Math.min(0.1, agora - tUlt), t = agora - t0;
+  tUlt = agora;
+  const cv = $("canvas-jogo"), ctx = cv.getContext("2d");
+  if (cv.width !== cv.clientWidth || cv.height !== cv.clientHeight) {
+    cv.width = cv.clientWidth; cv.height = cv.clientHeight; jogoAtual.redimensionar(cv.width, cv.height);
+  }
+  const comboAntes = jogoAtual.combo;
+  if (t > tInicioJogo) jogoAtual.passo(fonte.ler(t - tInicioJogo), dt, t - tInicioJogo);
+  // sons: contagem 3-2-1, "vai", combo subindo e sons contínuos (motor, pano)
+  const n321 = t <= 3 ? Math.ceil(3 - t) : 0;
+  if (n321 && n321 !== somContagem) { somContagem = n321; Som.tocar("contagem"); }
+  if (t > tInicioJogo && !somVai) { somVai = true; Som.tocar("vai"); }
+  if (jogoAtual.combo > comboAntes) Som.tocar("combo", jogoAtual.combo - 1);
+  if (jogoId === "carro") Som.motor(t > tInicioJogo ? jogoAtual.vel : null);
+  if (jogoId === "vidro") Som.pano(t > tInicioJogo ? (jogoAtual.limpando || 0) : 0);
+  jogoAtual.desenhar(ctx);
+  if (t <= 3) contagem(ctx, cv, Math.ceil(3 - t));
+  $("hud-pontos").textContent = Math.round(jogoAtual.pontos);
+  $("hud-combo").textContent = "x" + jogoAtual.combo;
+  const tj = Math.max(0, t - Math.min(t, tInicioJogo));
+  $("hud-tempo").textContent = Math.floor(tj / 60) + ":" + String(Math.floor(tj % 60)).padStart(2, "0");
+  $("hud-obj").textContent = jogoAtual.textoObjetivo();
+  if (jogoAtual.terminou) encerrarJogo("concluído");
+  else requestAnimationFrame(quadro);
+}
+function contagem(ctx, cv, n) {
+  ctx.fillStyle = bv("rgba(16,24,40,.55)", "rgba(0,0,0,.85)"); ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = bv("#fff", "#ffe600"); ctx.textAlign = "center"; ctx.font = `bold ${bv(140, 200)}px Segoe UI, sans-serif`;
+  ctx.fillText(n, cv.width / 2, cv.height / 2 + 50);
+  if (instrucao) texto(ctx, instrucao, cv.width / 2, cv.height / 2 + bv(120, 150), 26);
+}
+async function encerrarJogo(motivo) {
+  if (!rodando) return;
+  rodando = false;
+  Som.motor(null); Som.pano(0);
+  if (motivo === "concluído") Som.tocar("fim");
+  setTimeout(() => Som.parar(), 900);
+  const r = jogoAtual.resultado();
+  const pontos = Math.round(jogoAtual.pontos);
+  const estrelas = pontos >= jogoAtual.metaPontos ? 3 : pontos >= jogoAtual.metaPontos * 0.6 ? 2 : pontos > 0 ? 1 : 0;
+  r.metricas["Motivo do fim"] = motivo;
+  $("fim-titulo").textContent = estrelas === 3 ? "Excelente!" : estrelas === 2 ? "Muito bem!" : "Bom treino!";
+  $("fim-estrelas").textContent = "★".repeat(estrelas) + "☆".repeat(3 - estrelas);
+  $("fim-pontos").textContent = pontos;
+  // Na tela só o que é o objetivo do jogo; o resto fica na aba "Ver detalhes da partida"
+  const linhas = ks => ks.map(k => `<tr><td>${escapar(k)}</td><td>${escapar(r.metricas[k])}</td></tr>`).join("");
+  const principais = (OBJETIVO_FIM[jogoId] || []).filter(k => k in r.metricas);
+  $("fim-metricas").innerHTML = linhas(principais);
+  $("fim-metricas-extra").innerHTML = linhas(Object.keys(r.metricas).filter(k => !principais.includes(k)));
+  $("fim-detalhes").hidden = true;
+  $("fim-aba").setAttribute("aria-expanded", "false");
+  $("fim-aba").textContent = "Ver detalhes da partida ▾";
+  // O paciente vê só o resultado do jogo. As métricas clínicas medidas pelos
+  // sensores ficam na área de avaliação do profissional (/avaliacao) e no CSV.
+  $("fim-movimento").innerHTML = "";
+  $("modal-fim").classList.add("ativa");
+  try {
+    await api("POST", `/api/partidas/${partidaAtual.partida_id}/finalizar`,
+      { pontos, estrelas, destaque: r.destaque, motivo, metricas_jogo: r.metricas, eventos: eventosJogo });
+  } catch (e) {
+    $("fim-movimento").innerHTML = `<div class="nota" style="color:var(--vermelho)">A partida não foi salva: ${escapar(e.message)}</div>`;
+  }
+}
+// O que o paciente vê ao fim de cada jogo: só o objetivo (o resto fica na aba de detalhes)
+const OBJETIVO_FIM = {
+  bolo: ["Idas e voltas", "Massa mexida"],
+  carro: ["Tempo na velocidade certa"],
+  vidro: ["Vidro limpo"],
+};
+function alternarDetalhesFim() {
+  const d = $("fim-detalhes"), abrir = d.hidden;
+  d.hidden = !abrir;
+  $("fim-aba").setAttribute("aria-expanded", String(abrir));
+  $("fim-aba").textContent = abrir ? "Ocultar detalhes ▴" : "Ver detalhes da partida ▾";
+}
+function fecharFim() {
+  $("modal-fim").classList.remove("ativa");
+  BV = false; document.body.classList.remove("jogo-bv");
+  abrirPainel().then(() => { $("filtro-jogo").value = jogoId; desenharHistorico(); });
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape" && rodando) encerrarJogo("encerrado pelo profissional"); });
+
+// Eventos do jogo (avisos na tela), gravados com o relógio da bancada quando há sensores.
+function registrarEvento(texto) {
+  if (!rodando) return;
+  const inicio = isFinite(tInicioJogo) ? tInicioJogo : 3;
+  eventosJogo.push({ t_jogo_s: +(performance.now() / 1000 - t0 - inicio).toFixed(3),
+                     t_bancada_us: hw.partida && hw.partida.t_bancada_us ? hw.partida.t_bancada_us : null, evento: texto });
+}
+
+/* ---------- utilidades de desenho ---------- */
+// ===================== SONS (gerados no navegador, sem arquivos) =====================
+// Duas categorias: avisos importantes (placa nova/PARE, respingo, massa empelotando)
+// e efeitos (pontos, combo, conquistas, contagem, motor, pano, fim). Preferência por paciente:
+// "todos" | "avisos" (só os importantes) | "nenhum". Volume por computador (padrão baixo).
+// Todos os sons são curtos, suaves (ataque de ~10 ms, sem estalos) e com o volume limitado.
+const IMPORTANTES = new Set(["placa", "pare", "respingo", "alerta"]);
+const Som = {
+  ctx: null, mestre: null, modo: "todos", mudo: false, ativo: false, volume: 0.35,
+  motorOsc: null, motorGanho: null, motorFiltro: null, panoGanho: null, panoFonte: null,
+  carregarVolume() {
+    try { const v = parseFloat(localStorage.getItem("trilho_volume")); if (v >= 0 && v <= 1) this.volume = v; } catch (e) {}
+  },
+  salvarVolume(v) {
+    this.volume = Math.max(0, Math.min(1, v));
+    try { localStorage.setItem("trilho_volume", String(this.volume)); } catch (e) {}
+    this.aplicarVolume();
+  },
+  garantir() {
+    if (this.ctx) { if (this.ctx.state === "suspended") this.ctx.resume(); return true; }
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const comp = this.ctx.createDynamicsCompressor();          // limita picos: nada estoura
+      comp.threshold.value = -18; comp.ratio.value = 6;
+      this.mestre = this.ctx.createGain();
+      this.mestre.connect(comp).connect(this.ctx.destination);
+      this.aplicarVolume();
+      return true;
+    } catch (e) { this.ctx = null; return false; }          // sem áudio: o jogo segue só com a tela
+  },
+  aplicarVolume() {
+    if (!this.mestre) return;
+    const alvo = this.mudo ? 0 : this.volume * 0.7;
+    this.mestre.gain.setTargetAtTime(alvo, this.ctx.currentTime, 0.03);
+  },
+  iniciar(modo) {
+    this.modo = ["todos", "avisos", "nenhum"].includes(modo) ? modo : "todos";
+    this.mudo = this.modo === "nenhum"; this.ativo = true;
+    this.garantir(); this.aplicarVolume();
+  },
+  parar() { this.ativo = false; this.motor(null); this.pano(0); },
+  pode(nome) {
+    if (!this.ativo || this.mudo || this.volume <= 0 || !this.ctx) return false;
+    return this.modo === "todos" || (this.modo === "avisos" && IMPORTANTES.has(nome));
+  },
+  // nota curta com envelope suave
+  tom(freq, dur, { tipo = "sine", ganho = 0.3, atraso = 0, ataque = 0.012, ate = null } = {}) {
+    const c = this.ctx, t = c.currentTime + atraso;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = tipo; o.frequency.setValueAtTime(freq, t);
+    if (ate) o.frequency.exponentialRampToValueAtTime(ate, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(ganho, t + ataque);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(this.mestre); o.start(t); o.stop(t + dur + 0.05);
+  },
+  ruidoBuffer() {
+    if (this._ruido) return this._ruido;
+    const c = this.ctx, n = c.sampleRate * 1.5, b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    return (this._ruido = b);
+  },
+  // chiado curto filtrado (respingo)
+  ruido(dur, { freq = 1500, q = 1.2, ganho = 0.2, atraso = 0 } = {}) {
+    const c = this.ctx, t = c.currentTime + atraso;
+    const f = c.createBufferSource(), bp = c.createBiquadFilter(), g = c.createGain();
+    f.buffer = this.ruidoBuffer(); bp.type = "bandpass"; bp.frequency.value = freq; bp.Q.value = q;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(ganho, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    f.connect(bp).connect(g).connect(this.mestre); f.start(t); f.stop(t + dur + 0.05);
+  },
+  // intervalo mínimo entre repetições do mesmo som (segundos): nada fica martelando
+  intervalo: { ponto: 0.12, ponta: 2.5, conquista: 0.4, combo: 0.5, respingo: 1.2, alerta: 2, placa: 1, pare: 1 },
+  ultimo: {},
+  tocar(nome, n = 1) {
+    if (!this.pode(nome)) return;
+    const agora = this.ctx.currentTime, min = this.intervalo[nome] ?? 0.1;
+    if (agora - (this.ultimo[nome] ?? -99) < min) return;
+    this.ultimo[nome] = agora;
+    try {
+      switch (nome) {
+        case "contagem": this.tom(587, 0.12, { ganho: 0.22 }); break;
+        case "vai": this.tom(784, 0.1, { ganho: 0.22 }); this.tom(1175, 0.22, { ganho: 0.22, atraso: 0.09 }); break;
+        case "ponto": this.tom(1319, 0.08, { ganho: 0.1 }); break;
+        case "combo": [659, 784, 988, 1175].slice(0, n + 1).forEach((f, i) => this.tom(f, 0.14, { ganho: 0.2, atraso: i * 0.07 })); break;
+        case "conquista": this.tom(784, 0.12, { ganho: 0.22, tipo: "triangle" }); this.tom(1175, 0.25, { ganho: 0.22, tipo: "triangle", atraso: 0.1 }); break;
+        case "ponta": this.tom(392, 0.2, { ganho: 0.16, tipo: "triangle" }); break;
+        case "fim": [523, 659, 784, 1047].forEach((f, i) => this.tom(f, i === 3 ? 0.5 : 0.16, { ganho: 0.22, tipo: "triangle", atraso: i * 0.12 })); break;
+        // ---- avisos importantes
+        case "placa": this.tom(988, 0.35, { ganho: 0.22, tipo: "triangle" }); break;
+        case "pare": this.tom(523, 0.2, { ganho: 0.24, tipo: "triangle" }); this.tom(392, 0.32, { ganho: 0.24, tipo: "triangle", atraso: 0.2 }); break;
+        case "respingo": this.ruido(0.28, { freq: 1400, ganho: 0.22 }); this.tom(520, 0.22, { ganho: 0.12, ate: 260 }); break;
+        case "alerta": this.tom(440, 0.18, { ganho: 0.2, tipo: "triangle" }); this.tom(349, 0.28, { ganho: 0.2, tipo: "triangle", atraso: 0.2 }); break;
+      }
+    } catch (e) { /* sem áudio */ }
+  },
+  // ronco grave do motor que acompanha a velocidade (vel = null desliga)
+  motor(vel) {
+    const ligado = vel !== null && this.pode("motor");
+    if (!ligado) {
+      if (this.motorGanho) this.motorGanho.gain.setTargetAtTime(0, this.ctx.currentTime, 0.08);
+      return;
+    }
+    const c = this.ctx;
+    if (!this.motorOsc) {
+      this.motorOsc = c.createOscillator(); this.motorOsc.type = "sawtooth";
+      this.motorFiltro = c.createBiquadFilter(); this.motorFiltro.type = "lowpass"; this.motorFiltro.frequency.value = 320;
+      this.motorGanho = c.createGain(); this.motorGanho.gain.value = 0;
+      this.motorOsc.connect(this.motorFiltro).connect(this.motorGanho).connect(this.mestre); this.motorOsc.start();
+    }
+    const t = c.currentTime;
+    this.motorOsc.frequency.setTargetAtTime(48 + vel * 1.1, t, 0.12);
+    this.motorFiltro.frequency.setTargetAtTime(260 + vel * 4, t, 0.12);
+    this.motorGanho.gain.setTargetAtTime(vel < 1 ? 0.02 : 0.035 + vel / 100 * 0.05, t, 0.12);
+  },
+  // "fuuush" do pano enquanto limpa (nivel 0 a 1)
+  pano(nivel) {
+    if (!this.ctx) return;
+    const ligado = nivel > 0 && this.pode("pano");
+    if (!this.panoFonte) {
+      if (!ligado) return;
+      const c = this.ctx;
+      this.panoFonte = c.createBufferSource(); this.panoFonte.buffer = this.ruidoBuffer(); this.panoFonte.loop = true;
+      const bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 2400; bp.Q.value = 0.7;
+      this.panoGanho = c.createGain(); this.panoGanho.gain.value = 0;
+      this.panoFonte.connect(bp).connect(this.panoGanho).connect(this.mestre); this.panoFonte.start();
+    }
+    this.panoGanho.gain.setTargetAtTime(ligado ? 0.05 * nivel : 0, this.ctx.currentTime, 0.06);
+  },
+};
+Som.carregarVolume();
+function alternarSom() {
+  if (Som.modo === "nenhum" && Som.mudo) { Som.modo = "todos"; Som.mudo = false; }   // paciente "sem som": liga só nesta partida
+  else Som.mudo = !Som.mudo;
+  if (!Som.mudo && Som.volume === 0) Som.salvarVolume(0.35);
+  Som.garantir(); Som.aplicarVolume();
+  if (Som.mudo) { Som.motor(null); Som.pano(0); }
+  atualizarBotaoSom();
+}
+function atualizarBotaoSom() {
+  const b = $("hud-som"); if (!b) return;
+  const desl = Som.mudo || Som.volume === 0;
+  b.textContent = desl ? "🔇" : Som.volume < 0.4 ? "🔉" : "🔊";
+  b.classList.toggle("desligado", desl);
+  b.title = (desl ? "Som desligado" : Som.modo === "avisos" ? "Só avisos importantes" : "Som ligado") + " (clique ou tecla M)";
+  $("hud-volume").value = Math.round(Som.volume * 100);
+}
+document.addEventListener("keydown", e => { if ((e.key === "m" || e.key === "M") && rodando) alternarSom(); });
+
+// Modo baixa visão nos jogos: letras ~45% maiores, mais grossas e com contorno de contraste.
+let BV = false;
+const bv = (normal, alto) => BV ? alto : normal;
+function luminancia(cor) {
+  const m = /^#([0-9a-f]{6})$/i.exec(cor); if (!m) return 0.5;
+  const n = parseInt(m[1], 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+}
+function texto(ctx, s, x, y, tam = 22, cor = "#fff", alinhar = "center", peso = "600") {
+  ctx.textAlign = alinhar;
+  if (!BV) { ctx.fillStyle = cor; ctx.font = `${peso} ${tam}px Segoe UI, sans-serif`; ctx.fillText(s, x, y); return; }
+  const claro = luminancia(cor) >= 0.45;
+  const t2 = Math.round(Math.max(22, tam * 1.45));
+  ctx.font = `800 ${t2}px Segoe UI, sans-serif`;
+  ctx.lineJoin = "round"; ctx.lineWidth = Math.max(4, t2 / 6);
+  ctx.strokeStyle = claro ? "#000" : "#fff"; ctx.strokeText(s, x, y);
+  ctx.fillStyle = claro ? "#fff" : "#000"; ctx.fillText(s, x, y);
+}
+function balao(ctx, s, x, y, cor) {
+  const tam = BV ? 38 : 26, alt = BV ? 64 : 46;
+  ctx.font = `${BV ? 800 : 600} ${tam}px Segoe UI, sans-serif`;
+  const w = Math.min(ctx.canvas.width - 8, ctx.measureText(s).width + 40);
+  x = Math.max(w / 2 + 4, Math.min(ctx.canvas.width - w / 2 - 4, x));      // não sai da tela
+  ctx.fillStyle = BV ? "#000" : cor; ctx.beginPath(); ctx.roundRect(x - w / 2, y - alt / 2 - 7, w, alt, alt / 2); ctx.fill();
+  if (BV) { ctx.strokeStyle = cor; ctx.lineWidth = 6; ctx.stroke(); }
+  ctx.fillStyle = BV ? "#ffe600" : "#fff"; ctx.textAlign = "center"; ctx.fillText(s, x, y + tam * 0.35 - 6);
+}
+class Avisos {
+  constructor() { this.lista = []; }
+  add(s, cor = "#16a34a") { this.lista.push({ s, cor, vida: 1.6 }); this.lista = this.lista.slice(-2); registrarEvento(s); }
+  passo(dt) { this.lista.forEach(a => a.vida -= dt); this.lista = this.lista.filter(a => a.vida > 0); }
+  desenhar(ctx, x, y) { this.lista.forEach((a, i) => { ctx.globalAlpha = Math.min(1, a.vida); balao(ctx, a.s, x, y + i * (BV ? 76 : 56), a.cor); ctx.globalAlpha = 1; }); }
+}
+
+/* =====================================================================
+   JOGO 1 — MEXER A MASSA DE BOLO (espiral)
+   ===================================================================== */
+// Colher no estilo do ícone do jogo (🥣): concha oval prateada com um pouco de massa e cabo
+// arredondado que afina no "pescoço". (x, y) = centro da concha, que fica na massa.
+function desenharColher(ctx, x, y, R) {
+  const h = Math.max(24, R * 0.105) * (BV ? 1.25 : 1);  // meia-largura da concha
+  // comprimento total ≈ raio da panela, mas sem sair da tela (o cabo aponta para cima e para a direita)
+  const espaco = (Math.min(ctx.canvas.width - x, y) - 6) / Math.SQRT1_2;
+  const rx = h * 1.3, L = Math.max(rx * 2.6, Math.min(R * 1.0, espaco));
+  const w0 = h * 0.32, w1 = h * 0.2, wE = h * 0.5;      // larguras: saída da concha, pescoço, ponta do cabo
+  const forma = () => {                                   // contorno do cabo (no sistema girado)
+    ctx.beginPath();
+    ctx.moveTo(rx * 0.75, -w0);
+    ctx.quadraticCurveTo(rx * 1.15, -w1, rx * 1.5, -w1);
+    ctx.lineTo(L - wE, -wE);
+    ctx.arc(L - wE, 0, wE, -Math.PI / 2, Math.PI / 2);
+    ctx.lineTo(rx * 1.5, w1);
+    ctx.quadraticCurveTo(rx * 1.15, w1, rx * 0.75, w0);
+    ctx.closePath();
+  };
+  const metal = (y0, y1, claro, medio, escuro) => {
+    const g = ctx.createLinearGradient(0, y0, 0, y1);
+    g.addColorStop(0, claro); g.addColorStop(0.45, medio); g.addColorStop(1, escuro); return g;
+  };
+  ctx.save();
+  ctx.translate(x, y); ctx.rotate(-Math.PI / 4);           // cabo para cima e para a direita
+  // sombra na massa
+  if (!BV) {
+    ctx.save(); ctx.translate(5, 8); ctx.fillStyle = "rgba(60,30,0,.22)";
+    forma(); ctx.fill(); ctx.beginPath(); ctx.ellipse(0, 0, rx, h, 0, 0, 7); ctx.fill(); ctx.restore();
+  }
+  // cabo
+  forma();
+  ctx.fillStyle = BV ? "#00e5ff" : metal(-wE, wE, "#ffffff", "#d0d5dd", "#8c95a3"); ctx.fill();
+  ctx.lineWidth = BV ? 5 : 1.5; ctx.strokeStyle = BV ? "#000" : "#6b7280"; ctx.stroke();
+  if (!BV) {                                               // brilho ao longo do cabo
+    ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.lineWidth = Math.max(1.5, wE * 0.25); ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(rx * 1.7, -w1 * 0.35); ctx.lineTo(L - wE * 1.6, -wE * 0.45); ctx.stroke();
+  }
+  // concha (parte de fora)
+  ctx.beginPath(); ctx.ellipse(0, 0, rx, h, 0, 0, 7);
+  ctx.fillStyle = BV ? "#00e5ff" : metal(-h, h, "#f8fafc", "#cfd4dc", "#8c95a3"); ctx.fill();
+  ctx.lineWidth = BV ? 5 : 1.5; ctx.strokeStyle = BV ? "#000" : "#6b7280"; ctx.stroke();
+  // concavidade
+  ctx.beginPath(); ctx.ellipse(-rx * 0.06, 0, rx * 0.8, h * 0.72, 0, 0, 7);
+  ctx.fillStyle = BV ? "#00838f" : metal(-h, h, "#9aa3b0", "#c9ced6", "#eef1f5"); ctx.fill();
+  // um pouco de massa na colher
+  ctx.beginPath(); ctx.ellipse(-rx * 0.28, h * 0.08, rx * 0.42, h * 0.42, 0, 0, 7);
+  ctx.fillStyle = BV ? "#ffe600" : "#e3a052"; ctx.fill();
+  if (!BV) { ctx.beginPath(); ctx.ellipse(-rx * 0.36, -h * 0.06, rx * 0.16, h * 0.13, 0, 0, 7); ctx.fillStyle = "rgba(255,240,215,.75)"; ctx.fill(); }
+  // reflexo na borda
+  ctx.beginPath(); ctx.ellipse(-rx * 0.05, 0, rx * 0.88, h * 0.82, 0, Math.PI * 1.08, Math.PI * 1.55);
+  ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.lineWidth = BV ? 3 : Math.max(1.5, h * 0.12); ctx.lineCap = "round"; ctx.stroke();
+  ctx.restore();
+}
+
+// Geometria real da espiral (projeto da peça): linha central do canal, em mm, centro na origem
+let GEO_ESPIRAL = null;
+async function carregarGeometria() {
+  if (GEO_ESPIRAL) return;
+  try { GEO_ESPIRAL = await api("GET", "/api/geometria/espiral"); } catch (e) { GEO_ESPIRAL = null; }
+}
+
+class JogoBolo {
+  constructor(W, H, repeticoes, opcoes = {}) {
+    this.repeticoes = repeticoes; this.pontos = 0; this.combo = 1; this.seguidos = 0; this.terminou = false;
+    this.metaPontos = repeticoes * 450;
+    this.fase = "ida"; this.idasVoltas = 0; this.f = 0; this.v = 0; this.ultimoMarco = 0;
+    this.N = 10; this.sens = RESPINGO[opcoes.respingo] ? opcoes.respingo : "normal"; this.limite = RESPINGO[this.sens].limite; this.acima = false; this.respingos = 0; this.pausas = 0; this.parado = 0;
+    this.homog = new Array(60).fill(0); this.gotas = []; this.avisos = new Avisos();
+    this.tempos = { ida: [], volta: [] }; this.tFase = 0; this.t = 0;
+    this.fAnt = null; this.percorrido = 0; this.saltoAte = -1; this.saltos = 0;
+    this.redimensionar(W, H);
+  }
+  redimensionar(W, H) {
+    this.W = W; this.H = H; this.cx = W / 2; this.cy = H / 2 + 10; this.R = Math.min(W, H) * 0.38;
+    this.pts = []; let L = 0;
+    const add = (x, y) => {
+      const n = this.pts.length;
+      if (n) L += Math.hypot(x - this.pts[n - 1][0], y - this.pts[n - 1][1]);
+      this.pts.push([x, y, L]);
+    };
+    if (GEO_ESPIRAL) {
+      // a peça real: o canal (com a ponta da entrada) cabe na tigela; vista de cima, y para cima
+      const g = GEO_ESPIRAL.pontos_mm, rMax = Math.max(...g.map(p => Math.hypot(p[0], p[1])));
+      const esc = this.R * 0.97 / rMax;
+      g.forEach(p => add(this.cx + p[0] * esc, this.cy - p[1] * esc));
+      this.larguraCanal = GEO_ESPIRAL.largura_canal_mm * esc;
+    } else {
+      // sem a geometria (servidor antigo): espiral desenhada
+      for (let i = 0; i <= 700; i++) {
+        const th = i / 700 * 3 * 2 * Math.PI, r = this.R * (0.95 - 0.85 * i / 700);
+        add(this.cx + r * Math.cos(th), this.cy - r * Math.sin(th));
+      }
+      this.larguraCanal = Math.max(10, this.R * 0.07);
+    }
+    this.L = L;
+  }
+  ponto(f) {
+    const alvo = f * this.L; let lo = 0, hi = this.pts.length - 1;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (this.pts[m][2] < alvo) lo = m; else hi = m; }
+    return this.pts[hi];
+  }
+  passo(e, dt, t) {
+    this.t = t; this.f = e.f; this.avisos.passo(dt);
+    const k = Math.min(59, Math.floor(this.f * 60));
+    // salto de posição (correção de uma vez, não a mão): não pontua nem conta como percurso
+    const df = this.fAnt === null ? 0 : this.f - this.fAnt;
+    this.fAnt = this.f;
+    if (dt > 0 && (Math.abs(df) / dt > BOLO_SALTO || Math.abs(e.v) > BOLO_SALTO)) {
+      if (this.saltoAte < t) this.saltos++;
+      this.saltoAte = t + 0.3;
+    }
+    const saltando = t <= this.saltoAte;
+    // velocidade suavizada (~0,25 s): o ruído da medida não vira respingo repetido; num salto de
+    // posição ela fica como estava (não é a mão)
+    if (!saltando) { const a = dt > 0 ? Math.min(1, dt / 0.25) : 1; this.v += a * (Math.abs(e.v) - this.v); }
+    if (!saltando) this.percorrido += Math.max(0, this.fase === "ida" ? df : -df);
+    // marcos: a cada 1/N do caminho na direção certa
+    const marco = this.fase === "ida" ? Math.floor(this.f * this.N + 1e-6) : Math.floor((1 - this.f) * this.N + 1e-6);
+    if (saltando) {
+      this.ultimoMarco = Math.min(marco, this.N);   // marcos pulados não valem (se a correção voltar, valem de novo)
+    } else if (marco > this.ultimoMarco && marco <= this.N) {
+      const n = marco - this.ultimoMarco; this.ultimoMarco = marco;
+      this.seguidos += n; this.combo = Math.min(3, 1 + Math.floor(this.seguidos / 4));
+      this.pontos += 10 * n * this.combo;
+      Som.tocar("ponto");
+    }
+    // velocidade: rápido demais respinga (um salto de posição não é a mão: não respinga)
+    if (this.v > this.limite && !saltando) {   // (só volta a respingar depois de baixar de 85% do limite)
+      if (!this.acima) {
+        this.respingos++; this.seguidos = 0; this.combo = 1; this.avisos.add("Devagar! Respingou", "#dc2626"); Som.tocar("respingo");
+        const [x, y] = this.ponto(this.f);
+        for (let i = 0; i < 12; i++) this.gotas.push({ x, y, vx: (Math.random() - .5) * 400, vy: -Math.random() * 300 - 50, vida: .9 });
+      }
+      this.acima = true;
+    } else if (!saltando) {
+      if (this.v < 0.85 * this.limite) this.acima = false;
+      if (this.v > 0.005) this.homog[k] = Math.min(1, this.homog[k] + dt * 2.5 / this.repeticoes);
+    }
+    // pausas longas
+    if (this.v < 0.003) { this.parado += dt; if (this.parado >= 3 && this.parado - dt < 3) { this.pausas++; this.avisos.add("A massa está empelotando!", "#f59e0b"); Som.tocar("alerta"); } }
+    else this.parado = 0;
+    // ida e volta
+    // só vale chegar ao centro (ou voltar à borda) depois de percorrer boa parte do caminho
+    const percorreu = this.percorrido >= BOLO_PERCURSO_MIN;
+    if (this.fase === "ida" && this.f > BOLO_CENTRO && percorreu) {
+      this.tempos.ida.push(t - this.tFase); this.tFase = t; this.fase = "volta"; this.ultimoMarco = 0; this.percorrido = 0;
+      this.pontos += 50 * this.combo; this.avisos.add("Chegou no centro! +" + 50 * this.combo); Som.tocar("conquista");
+    } else if (this.fase === "volta" && this.f < BOLO_BORDA && percorreu) {
+      this.tempos.volta.push(t - this.tFase); this.tFase = t; this.fase = "ida"; this.ultimoMarco = 0; this.percorrido = 0;
+      this.idasVoltas++; this.pontos += 50 * this.combo; this.avisos.add("Volta completa! +" + 50 * this.combo); Som.tocar("conquista");
+      if (this.idasVoltas >= this.repeticoes) this.terminou = true;
+    }
+    this.gotas.forEach(g => { g.x += g.vx * dt; g.y += g.vy * dt; g.vy += 700 * dt; g.vida -= dt; });
+    this.gotas = this.gotas.filter(g => g.vida > 0);
+  }
+  textoObjetivo() { return `${this.idasVoltas}/${this.repeticoes}`; }
+  desenhar(ctx) {
+    const { W, H, cx, cy, R } = this;
+    ctx.fillStyle = bv("#101828", "#000"); ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = bv("#475467", "#fff"); ctx.beginPath(); ctx.arc(cx, cy, R * 1.12, 0, 7); ctx.fill();
+    ctx.fillStyle = bv("#d0d5dd", "#000"); ctx.beginPath(); ctx.arc(cx, cy, R * 1.06, 0, 7); ctx.fill();
+    ctx.fillStyle = bv("#e8a85c", "#3a1d00"); ctx.beginPath(); ctx.arc(cx, cy, R * 1.0, 0, 7); ctx.fill();
+    ctx.lineCap = "round"; ctx.lineWidth = this.larguraCanal * bv(1, 1.15);
+    for (let i = 0; i < this.pts.length - 1; i += 2) {
+      const h = this.homog[Math.min(59, Math.floor(i / this.pts.length * 60))];
+      // alto contraste: massa por mexer marrom-escura, massa mexida amarela forte
+      ctx.strokeStyle = BV ? `rgb(${120 + 135 * h},${60 + 152 * h},${0})` : `rgb(${200 + 52 * h},${120 + 100 * h},${60 + 90 * h})`;
+      ctx.beginPath(); ctx.moveTo(this.pts[i][0], this.pts[i][1]);
+      ctx.lineTo(this.pts[Math.min(i + 2, this.pts.length - 1)][0], this.pts[Math.min(i + 2, this.pts.length - 1)][1]); ctx.stroke();
+    }
+    const [x, y] = this.ponto(this.f);
+    desenharColher(ctx, x, y, R);
+    ctx.fillStyle = bv("#f2c38b", "#ffe600"); this.gotas.forEach(g => { ctx.beginPath(); ctx.arc(g.x, g.y, bv(6, 9), 0, 7); ctx.fill(); });
+    const media = this.homog.reduce((a, b) => a + b, 0) / 60;
+    const bh = bv(22, 34), by = bv(62, 72);
+    texto(ctx, "Massa mexida", 40, 50, 18, "#98a2b3", "left");
+    ctx.fillStyle = bv("#344054", "#000"); ctx.beginPath(); ctx.roundRect(40, by, bv(240, 320), bh, bh / 2); ctx.fill();
+    if (BV) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.stroke(); }
+    ctx.fillStyle = bv("#16a34a", "#00e676"); ctx.beginPath(); ctx.roundRect(40, by, bv(240, 320) * media, bh, bh / 2); ctx.fill();
+    texto(ctx, this.fase === "ida" ? "Mexa até o CENTRO" : "Agora volte para a BORDA", W - 40, 60, 22, "#fff", "right");
+    this.avisos.desenhar(ctx, W / 2, 60);
+  }
+  resultado() {
+    const m = a => a.length ? (a.reduce((x, y) => x + y, 0) / a.length).toFixed(1) : "—";
+    return {
+      metricas: { "Idas e voltas": `${this.idasVoltas}/${this.repeticoes}`, "Tempo médio da ida (s)": m(this.tempos.ida),
+        "Tempo médio da volta (s)": m(this.tempos.volta), "Respingos (rápido demais)": this.respingos,
+        "Pausas longas": this.pausas, "Sensibilidade ao respingo": RESPINGO[this.sens].nome, "Massa mexida": Math.round(100 * this.homog.reduce((a, b) => a + b, 0) / 60) + "%" },
+      destaque: `${this.idasVoltas} idas e voltas, ${this.respingos} respingos`,
+    };
+  }
+}
+
+/* =====================================================================
+   JOGO 2 — PILOTAR O CARRO (reto)
+   Joystick no meio = neutro; para frente acelera; para trás freia/ré.
+   ===================================================================== */
+class JogoCarro {
+  constructor(W, H, duracao, opcoes = {}) {
+    this.duracao = duracao; this.pontos = 0; this.combo = 1; this.terminou = false; this.t = 0;
+    this.metaPontos = duracao * 9;
+    this.zonaCm = opcoes.zonaCm || 1.5; this.zona = opcoes.zonaFrac || 0.25; this.folga = 0.05;
+    this.estado = 0; this.tempoEstado = { "-1": 0, "0": 0, "1": 0 }; this.maxFrente = 0; this.maxRe = 0;
+    this.foraDoAlcance = false;
+    this.vel = 0; this.alavanca = 0; this.pista = 0; this.avisos = new Avisos();
+    // placas sorteadas a cada partida (antes era sempre a mesma sequência)
+    this.placas = [this.sortearPlaca(null)];
+    this.iPlaca = 0; this.tPlaca = 0; this.noAlvo = 0; this.tempoNoAlvo = 0; this.reacoes = []; this.esperandoReacao = true;
+    this.tolerancia = opcoes.toleranciaCombo ?? 1.5; this.foraDoAlvo = 0;
+    this.margemVel = opcoes.margemVel ?? 10;   // ± km/h em torno da placa que contam pontos
+    this.trocas = 0; this.ladoAnt = 0;
+    this.redimensionar(W, H);
+  }
+  redimensionar(W, H) { this.W = W; this.H = H; }
+  // Próxima placa: 20 a 90 km/h ou PARE (0). Nunca repete a anterior, muda pelo menos 20 km/h,
+  // PARE em ~1 de cada 6 placas e nunca dois PARE seguidos (nem PARE logo na primeira).
+  sortearPlaca(ant) {
+    if (ant !== null && ant !== 0 && Math.random() < 1 / 6) return 0;
+    const ops = [20, 30, 40, 50, 60, 70, 80, 90].filter(v => ant === null || ant === 0 || Math.abs(v - ant) >= 20);
+    return ops[Math.floor(Math.random() * ops.length)];
+  }
+  get alvo() {
+    while (this.placas.length <= this.iPlaca) this.placas.push(this.sortearPlaca(this.placas[this.placas.length - 1]));
+    return this.placas[this.iPlaca];
+  }
+  passo(e, dt, t) {
+    this.t = t; this.avisos.passo(dt);
+    const a = Math.max(-1, Math.min(1, e.f * 2 - 1));          // -1 = todo para trás, +1 = todo para frente
+    this.foraDoAlcance = !!e.foraDoAlcance;
+    // zona neutra com folga na borda (não fica piscando)
+    if (this.estado === 0) { if (a > this.zona) this.estado = 1; else if (a < -this.zona) this.estado = -1; }
+    else if (this.estado === 1 && a < this.zona - this.folga) this.estado = 0;
+    else if (this.estado === -1 && a > -(this.zona - this.folga)) this.estado = 0;
+    // intensidade: 0 logo depois da zona neutra, 1 no fim da fenda
+    const intens = this.estado === 0 ? 0 : Math.min(1, Math.max(0, (Math.abs(a) - this.zona) / (1 - this.zona)));
+    this.alavanca = this.estado * intens;
+    this.a = a;
+    this.tempoEstado[this.estado] += dt;
+    if (this.estado === 1) this.maxFrente = Math.max(this.maxFrente, intens);
+    if (this.estado === -1) this.maxRe = Math.max(this.maxRe, intens);
+    const lado = Math.sign(this.alavanca);
+    if (lado && lado !== this.ladoAnt) { if (this.ladoAnt) this.trocas++; this.ladoAnt = lado; }
+    // para frente acelera; para trás é freio (mais forte quanto mais para trás). O carro nunca anda de ré.
+    if (this.alavanca >= 0) this.vel += (this.alavanca * 100 - this.vel) * Math.min(1, dt * 0.9);
+    else this.vel -= (20 + 80 * -this.alavanca) * dt;
+    this.vel = Math.max(0, this.vel);
+    this.pista += this.vel * dt * 6;
+    // placas mudam a cada 7 s
+    if (t - this.tPlaca > 7) { this.iPlaca++; this.tPlaca = t; this.esperandoReacao = true; this.avisos.add(this.alvo === 0 ? "PARE!" : "Nova placa: " + this.alvo, "#2f6fed"); Som.tocar(this.alvo === 0 ? "pare" : "placa"); }
+    const dentro = Math.abs(this.vel - this.alvo) < this.margemVel;
+    if (dentro) {
+      if (this.esperandoReacao) { this.reacoes.push(t - this.tPlaca); this.esperandoReacao = false; this.avisos.add("Na velocidade certa!"); Som.tocar("conquista"); }
+      this.noAlvo += dt; this.tempoNoAlvo += dt;
+      this.combo = Math.min(3, 1 + Math.floor(this.noAlvo / 3));
+      this.pontos += 10 * dt * this.combo;
+      this.foraDoAlvo = 0;
+    } else {
+      // tolerância: o combo só se perde depois de alguns segundos seguidos fora da velocidade.
+      // Fora da faixa não ganha pontos, e o tempo para subir o combo fica congelado.
+      this.foraDoAlvo += dt;
+      if (this.foraDoAlvo > this.tolerancia) { this.noAlvo = 0; this.combo = 1; }
+    }
+    if (t >= this.duracao) this.terminou = true;
+  }
+  textoObjetivo() { return Math.max(0, Math.ceil(this.duracao - this.t)) + "s"; }
+  desenhar(ctx) {
+    const { W, H } = this, cx = W / 2, larg = Math.min(360, W * 0.35);
+    ctx.fillStyle = bv("#4d7c0f", "#0b2a00"); ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = bv("#3f3f46", "#000"); ctx.fillRect(cx - larg / 2, 0, larg, H);
+    if (BV) { ctx.fillStyle = "#fff"; ctx.fillRect(cx - larg / 2, 0, 8, H); ctx.fillRect(cx + larg / 2 - 8, 0, 8, H); }
+    ctx.fillStyle = bv("#fafafa", "#ffe600");
+    const lf = bv(10, 18);
+    for (let y = -80; y < H + 80; y += 80) ctx.fillRect(cx - lf / 2, ((y + this.pista) % (H + 160) + H + 160) % (H + 160) - 80, lf, 44);
+    ctx.fillStyle = "#e11d48"; ctx.beginPath(); ctx.roundRect(cx - 32, H - 190, 64, 110, 14); ctx.fill();
+    if (BV) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 5; ctx.stroke(); }
+    ctx.fillStyle = "#1e293b"; ctx.fillRect(cx - 24, H - 170, 48, 26);
+    // placa (maior no modo baixa visão)
+    const rp = bv(60, 78), px = Math.min(W - rp - 16, cx + larg / 2 + bv(90, 110)), py = bv(130, 185);
+    ctx.fillStyle = bv("#71717a", "#fff"); ctx.fillRect(px - 4, py, 8, 120);
+    if (this.alvo === 0) {
+      ctx.fillStyle = "#dc2626"; ctx.beginPath();
+      for (let i = 0; i < 8; i++) { const an = Math.PI / 8 + i * Math.PI / 4; ctx.lineTo(px + (rp + 2) * Math.cos(an), py + (rp + 2) * Math.sin(an)); }
+      ctx.fill(); if (BV) { ctx.closePath(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 6; ctx.stroke(); }
+      texto(ctx, "PARE", px, py + 10, 28);
+    } else {
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(px, py, rp, 0, 7); ctx.fill();
+      ctx.strokeStyle = "#dc2626"; ctx.lineWidth = bv(12, 16); ctx.stroke(); texto(ctx, this.alvo, px, py + 14, 44, "#111");
+    }
+    // combo em risco: contagem da tolerância embaixo da placa
+    if (this.combo > 1 && this.foraDoAlvo > 0) {
+      const resta = Math.max(0, this.tolerancia - this.foraDoAlvo);
+      balao(ctx, `Combo x${this.combo}: volte em ${resta.toFixed(1).replace(".", ",")} s`, px, py + bv(160, 190), "#d97706");
+    }
+    // velocímetro (maior: ocupa o espaço entre a alavanca e a pista)
+    const espaco = cx - larg / 2 - 200;                       // da direita dos rótulos da alavanca até a pista
+    const R = Math.max(105, Math.min(140, espaco / 2 - 8, (H - 200) / 2.2));
+    const vx = cx - larg / 2 - R - 14, vy = H - R - 26, ra = R * 0.78;
+    // tela estreita: o velocímetro invade a coluna da alavanca -> a alavanca fica mais curta, acima dele
+    const ahMax = vx - R < 200 ? vy - R - 30 - 120 : Infinity;
+    const A0 = Math.PI * 0.75, VARRE = Math.PI * 1.5, ang = v => A0 + VARRE * Math.max(0, Math.min(100, v)) / 100;
+    ctx.fillStyle = bv("#101828", "#000"); ctx.beginPath(); ctx.arc(vx, vy, R, 0, 7); ctx.fill();
+    if (BV) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 5; ctx.stroke(); }
+    ctx.lineCap = "butt";
+    ctx.strokeStyle = bv("#344054", "#555"); ctx.lineWidth = R * bv(0.17, 0.21); ctx.beginPath(); ctx.arc(vx, vy, ra, A0, A0 + VARRE); ctx.stroke();
+    // faixa verde = velocidade da placa ± margem de pontuação (a mesma faixa que conta pontos)
+    ctx.strokeStyle = bv("#16a34a", "#00e676"); ctx.beginPath(); ctx.arc(vx, vy, ra, ang(Math.max(0, this.alvo - this.margemVel)), ang(this.alvo + this.margemVel)); ctx.stroke();
+    ctx.strokeStyle = bv("#bbf7d0", "#fff"); ctx.lineWidth = R * 0.03;                     // marca do valor exato da placa
+    ctx.beginPath(); ctx.moveTo(vx + (ra - R * 0.1) * Math.cos(ang(this.alvo)), vy + (ra - R * 0.1) * Math.sin(ang(this.alvo)));
+    ctx.lineTo(vx + (ra + R * 0.1) * Math.cos(ang(this.alvo)), vy + (ra + R * 0.1) * Math.sin(ang(this.alvo))); ctx.stroke();
+    const angV = ang(this.vel);
+    ctx.strokeStyle = bv("#fff", "#ffe600"); ctx.lineWidth = R * bv(0.05, 0.09); ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(vx, vy); ctx.lineTo(vx + ra * 0.9 * Math.cos(angV), vy + ra * 0.9 * Math.sin(angV)); ctx.stroke();
+    ctx.fillStyle = bv("#fff", "#ffe600"); ctx.beginPath(); ctx.arc(vx, vy, R * 0.07, 0, 7); ctx.fill();
+    texto(ctx, Math.round(this.vel), vx, vy + R * 0.62, Math.round(R * bv(0.42, 0.34)));
+    texto(ctx, "km/h", vx, vy + R * 0.86, Math.round(R * bv(0.15, 0.12)), "#98a2b3");
+    // alavanca
+    const ax = 50, ay = 120, ah = Math.max(140, Math.min(H - 260, ahMax));
+    texto(ctx, "Joystick", ax + 10, ay - 16, 16, "#fff", "left");
+    ctx.fillStyle = bv("rgba(0,0,0,.35)", "#000"); ctx.beginPath(); ctx.roundRect(ax, ay, 40, ah, 20); ctx.fill();
+    if (BV) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.stroke(); }
+    ctx.fillStyle = bv("rgba(255,255,255,.15)", "rgba(255,255,255,.4)"); ctx.fillRect(ax, ay + ah / 2 - this.zona * ah / 2, 40, this.zona * ah);
+    ctx.fillStyle = this.estado === 0 ? bv("#facc15", "#ffe600") : this.estado === 1 ? bv("#22c55e", "#00e676") : bv("#f97316", "#ff6d00");
+    ctx.beginPath(); ctx.arc(ax + 20, ay + ah / 2 - (this.a || 0) * ah / 2, bv(18, 26), 0, 7); ctx.fill();
+    if (BV) { ctx.strokeStyle = "#000"; ctx.lineWidth = 4; ctx.stroke(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
+              ctx.beginPath(); ctx.arc(ax + 20, ay + ah / 2 - (this.a || 0) * ah / 2, 30, 0, 7); ctx.stroke(); }
+    texto(ctx, this.estado === 0 ? "neutro" : this.estado === 1 ? "acelera" : "freia", ax + 52, ay + ah / 2 + 5, 14, "#fff", "left");
+    if (this.foraDoAlcance) balao(ctx, "Sensor não vê o joystick", W / 2, H / 2, "#dc2626");
+    texto(ctx, "frente", ax + 52, ay + 16, 14, "#e4e7ec", "left"); texto(ctx, "freio", ax + 52, ay + ah - 6, 14, "#e4e7ec", "left");
+    this.avisos.desenhar(ctx, cx, 60);
+  }
+  resultado() {
+    const reac = this.reacoes.length ? (this.reacoes.reduce((a, b) => a + b, 0) / this.reacoes.length).toFixed(1) : "—";
+    const pct = Math.round(100 * this.tempoNoAlvo / Math.max(1, this.t));
+    return {
+      metricas: { "Tempo na velocidade certa": pct + "%", "Reação média às placas (s)": reac,
+        "Trocas frente/freio": this.trocas,
+        "Zona neutra (cm)": this.zonaCm.toFixed(1), "Margem de pontuação (km/h)": "± " + this.margemVel, "Tolerância do combo (s)": this.tolerancia,
+        "Tempo acelerando / neutro / freando (s)": [1, 0, -1].map(k => this.tempoEstado[k].toFixed(0)).join(" / "),
+        "Máximo para frente / para trás": Math.round(100 * this.maxFrente) + "% / " + Math.round(100 * this.maxRe) + "%",
+        "Duração (s)": Math.round(this.t) },
+      destaque: `${pct}% na velocidade certa`,
+    };
+  }
+}
+
+/* =====================================================================
+   JOGO 3 — LIMPAR A JANELA (guarda-chuva / punho)
+   ===================================================================== */
+class JogoVidro {
+  constructor(W, H, duracao, opcoes = {}) {
+    this.sens = LIMPEZA[opcoes.limpeza] ? opcoes.limpeza : "normal"; this.fatorLimpeza = LIMPEZA[this.sens].fator;
+    this.duracao = duracao; this.pontos = 0; this.combo = 1; this.terminou = false; this.t = 0;
+    this.metaPontos = 900;
+    this.C = 20; this.Lh = 10; this.sujeira = [];
+    for (let i = 0; i < this.Lh; i++) { const l = []; for (let j = 0; j < this.C; j++) l.push(j < 2 || j >= this.C - 2 ? 1.6 : 1); this.sujeira.push(l); }
+    this.total = this.sujeira.flat().reduce((a, b) => a + b, 0);
+    this.f = 0.5; this.dir = 0; this.ini = 0.5; this.minP = 0.5; this.maxP = 0.5; this.passadas = 0; this.amplitudes = [];
+    // Anti-"roubo": cada faixa só perde até PORPASSADA de sujeira por passada. Uma passada nova só
+    // começa quando o pano muda de sentido depois de andar pelo menos MINTRACO do vidro; tremer ou
+    // esfregar no mesmo lugar não limpa mais nada.
+    this.PORPASSADA = 0.35 * this.fatorLimpeza; this.MINTRACO = 0.10;
+    this.traco = 0; this.sentidoTraco = 0; this.extremo = null;
+    this.tracoCol = new Array(this.C).fill(-1); this.gastoCol = new Array(this.C).fill(0);
+    this.avisos = new Avisos();
+    this.redimensionar(W, H);
+  }
+  redimensionar(W, H) { this.W = W; this.H = H; }
+  passo(e, dt, t) {
+    this.t = t; this.f = e.f; this.avisos.passo(dt);
+    const col = Math.min(this.C - 1, Math.floor(this.f * this.C));
+    // passada de limpeza: pela posição (não pela velocidade, que treme), com folga de MINTRACO
+    if (this.extremo === null) this.extremo = this.f;              // antes do 1º sentido: ponto de partida
+    if (this.sentidoTraco === 0) {
+      if (Math.abs(this.f - this.extremo) >= this.MINTRACO) { this.sentidoTraco = Math.sign(this.f - this.extremo); this.extremo = this.f; }
+    } else if ((this.f - this.extremo) * this.sentidoTraco > 0) {
+      this.extremo = this.f;                                          // continua indo no mesmo sentido
+    } else if ((this.extremo - this.f) * this.sentidoTraco >= this.MINTRACO) {
+      this.traco++; this.sentidoTraco = -this.sentidoTraco; this.extremo = this.f;   // voltou de verdade: nova passada
+    }
+    let limpou = false;
+    if (Math.abs(e.v) > 0.05) {
+      for (const c of [col - 1, col, col + 1]) {
+        if (c < 0 || c >= this.C) continue;
+        if (this.tracoCol[c] !== this.traco) { this.tracoCol[c] = this.traco; this.gastoCol[c] = 0; }
+        const passo = Math.min(dt * 1.2 * this.fatorLimpeza, this.PORPASSADA - this.gastoCol[c]);
+        if (passo <= 0) continue;                      // esta faixa já foi limpa nesta passada
+        limpou = true;
+        this.gastoCol[c] += passo;
+        for (let i = 0; i < this.Lh; i++) {
+          const antes = this.sujeira[i][c];
+          this.sujeira[i][c] = Math.max(0, antes - passo);
+          this.pontos += (antes - this.sujeira[i][c]) * 3;
+        }
+      }
+    }
+    this.limpando = limpou ? Math.min(1, Math.abs(e.v) / 0.6) : 0;
+    // passadas: cada mudança de sentido fecha uma passada
+    this.minP = Math.min(this.minP, this.f); this.maxP = Math.max(this.maxP, this.f);
+    const d = Math.sign(e.v);
+    if (Math.abs(e.v) > 0.08 && d !== this.dir) {
+      if (this.dir !== 0) {
+        const amp = this.maxP - this.minP;
+        if (amp > 0.25) {
+          this.passadas++; this.amplitudes.push(amp);
+          if (amp > 0.85) { this.combo = Math.min(3, this.combo + 1); this.pontos += 20 * this.combo; this.avisos.add("Passada completa! +" + 20 * this.combo); Som.tocar("conquista"); }
+          else { this.combo = 1; this.avisos.add("Vá até a ponta!", "#f59e0b"); Som.tocar("ponta"); }
+        }
+      }
+      this.dir = d; this.minP = this.maxP = this.f;
+    }
+    if (this.limpo() >= 0.99 || t >= this.duracao) this.terminou = true;
+  }
+  limpo() { return 1 - this.sujeira.flat().reduce((a, b) => a + b, 0) / this.total; }
+  textoObjetivo() { return Math.max(0, Math.ceil(this.duracao - this.t)) + "s"; }
+  desenhar(ctx) {
+    const { W, H } = this;
+    ctx.fillStyle = bv("#cfe8ff", "#fff"); ctx.fillRect(0, 0, W, H);
+    const mx = W * 0.12, my = bv(90, 110), jw = W - 2 * mx, jh = H - bv(170, 190), cw = jw / this.C, ch = jh / this.Lh;
+    ctx.fillStyle = bv("#8b5e34", "#000"); ctx.fillRect(mx - 18, my - 18, jw + 36, jh + 36);
+    ctx.fillStyle = bv("#bfe3ff", "#e6f7ff"); ctx.fillRect(mx, my, jw, jh);
+    for (let i = 0; i < this.Lh; i++) for (let j = 0; j < this.C; j++) {
+      const s = Math.min(1, this.sujeira[i][j]);
+      if (s > 0.01) { const x = Math.round(mx + j * cw), y = Math.round(my + i * ch); ctx.fillStyle = BV ? `rgba(60,35,10,${0.95 * s})` : `rgba(110,85,55,${0.85 * s})`; ctx.fillRect(x, y, Math.round(mx + (j + 1) * cw) - x, Math.round(my + (i + 1) * ch) - y); }
+    }
+    ctx.fillStyle = bv("#8b5e34", "#000"); ctx.fillRect(mx + jw / 2 - 6, my, 12, jh);
+    const px = mx + this.f * jw, rw = bv(34, 44), rh = bv(60, 78);
+    ctx.fillStyle = bv("#facc15", "#ffe600"); ctx.beginPath(); ctx.roundRect(px - rw, my + jh / 2 - rh, 2 * rw, 2 * rh, 14); ctx.fill();
+    ctx.strokeStyle = bv("#ca8a04", "#000"); ctx.lineWidth = bv(3, 7); ctx.stroke();
+    if (BV) { ctx.strokeStyle = "#ff00c8"; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(px - rw - 7, my + jh / 2 - rh - 7, 2 * rw + 14, 2 * rh + 14, 18); ctx.stroke(); }
+    texto(ctx, `Vidro limpo: ${Math.round(100 * this.limpo())}%`, mx, bv(50, 62), 24, "#1d2433", "left");
+    texto(ctx, `Passadas: ${this.passadas}`, W - mx, bv(50, 62), 24, "#1d2433", "right");
+    this.avisos.desenhar(ctx, W / 2, 50);
+  }
+  resultado() {
+    const amp = this.amplitudes.length ? Math.round(100 * this.amplitudes.reduce((a, b) => a + b, 0) / this.amplitudes.length) + "%" : "—";
+    return {
+      metricas: { "Vidro limpo": Math.round(100 * this.limpo()) + "%", "Passadas": this.passadas,
+        "Amplitude média": amp, "Sensibilidade da limpeza": LIMPEZA[this.sens].nome, "Duração (s)": Math.round(this.t) },
+      destaque: `${Math.round(100 * this.limpo())}% limpo, amplitude ${amp}`,
+    };
+  }
+}
+
+/* =====================================================================
+   INÍCIO
+   ===================================================================== */
+Trilho.montarUsuario("usuario", "/").then(u => { if (u) { conectarWs(); abrirPainel(); } });
+</script>
+</body>
+</html>

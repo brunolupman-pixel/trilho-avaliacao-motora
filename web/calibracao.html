@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trilho — Calibração</title>
+<style>
+  :root { --fundo:#f4f6fb; --cartao:#fff; --texto:#1d2433; --suave:#667085; --linha:#e3e7ef; --azul:#2f6fed;
+          --azul-claro:#e8f0ff; --verde:#16a34a; --verde-claro:#e7f7ed; --laranja:#f59e0b; --vermelho:#dc2626; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--fundo); color:var(--texto); font-size:15px; }
+  .topo { display:flex; align-items:center; justify-content:space-between; padding:14px 28px; background:var(--cartao); border-bottom:1px solid var(--linha); }
+  .topo h1 { font-size:20px; margin:0; }
+  .topo .direita { display:flex; gap:14px; align-items:center; flex-wrap:wrap; font-size:14px; }
+  .usuario-logado { color:var(--suave); }
+  a { color:var(--azul); font-weight:600; text-decoration:none; }
+  .conteudo { max-width:1100px; margin:0 auto; padding:24px; display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .cartao { background:var(--cartao); border:1px solid var(--linha); border-radius:16px; padding:20px; }
+  .cartao.largo { grid-column:1 / -1; }
+  h2 { font-size:17px; margin:0 0 12px; font-weight:600; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--linha); }
+  th { color:var(--suave); font-weight:600; }
+  button { font:inherit; cursor:pointer; border:0; border-radius:10px; padding:8px 14px; background:var(--azul); color:#fff; font-weight:600; }
+  button.secundario { background:var(--azul-claro); color:var(--azul); }
+  input, textarea, select { font:inherit; padding:8px 10px; border:1px solid var(--linha); border-radius:10px; }
+  textarea { width:100%; font-family:Consolas,monospace; font-size:12px; min-height:220px; }
+  .selo { font-size:12px; padding:2px 8px; border-radius:99px; font-weight:600; }
+  .selo.ok { background:var(--verde-claro); color:var(--verde); }
+  .selo.aviso { background:#fff4e0; color:#b45309; }
+  .selo.erro { background:#fde8e8; color:var(--vermelho); }
+  .nota { color:var(--suave); font-size:13px; margin:6px 0 10px; }
+  .msg { font-size:13px; margin-top:8px; min-height:1em; }
+  .lm { display:inline-flex; gap:6px; align-items:center; margin-right:12px; font-size:13px; }
+  .lm i { width:12px; height:12px; border-radius:50%; background:#c4c9d4; display:inline-block; }
+  .lm i.on { background:var(--verde); }
+  .linha { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+<div class="topo"><h1>Calibração e status dos sensores</h1><div class="direita" id="usuario"></div></div>
+<div class="conteudo">
+
+  <div class="cartao">
+    <div class="linha" style="justify-content:space-between"><h2 style="margin:0">Bancada e joysticks</h2>
+      <button class="secundario" onclick="Trilho.abrirConexaoEsp(atualizarStatus)">Conectar ESP32 / porta USB</button></div>
+    <div id="status" style="margin-top:10px">Carregando…</div>
+  </div>
+
+  <div class="cartao">
+    <h2>Sensores ao vivo</h2>
+    <div class="nota">Sensores infravermelhos (aceso = está vendo o joystick) e distância do VL53L0X.</div>
+    <div id="lm393"></div>
+    <p>VL53L0X: <b id="vl53">—</b></p>
+    <div class="nota">Calibração do caminho reto: <span id="calib-reto">—</span>. Para recalibrar, use o botão no cartão do carro, no painel.</div>
+  </div>
+
+  <div class="cartao largo" id="cartao-msgs" style="display:none">
+    <h2>Mensagens da caixa</h2>
+    <div class="nota">O que a caixa avisou ao ligar e depois. As linhas "I2C" mostram quem respondeu em cada barramento:
+      esperado <b>D21/D22: 0x29 (VL53L0X) e 0x68 (IMU do carro)</b> e <b>D18/D19: 0x68 (IMU da janela, AD0 no GND) e 0x69 (IMU
+      da espiral, AD0 no 3V3)</b>. Se faltar um endereço, confira os fios daquele sensor.</div>
+    <div id="msgs" style="font-family:Consolas,monospace;font-size:13px;white-space:pre-wrap"></div>
+  </div>
+
+  <div class="cartao largo" id="cartao-imus" style="display:none">
+    <h2>IMUs ao vivo</h2>
+    <div class="nota">Parado e na posição normal, a aceleração deve mostrar cerca de 1 g no eixo vertical e 0 nos outros,
+      e o giro deve ficar perto de 0 °/s. Mexa o joystick e veja os números mudarem. O joystick do jogo em andamento
+      manda cerca de 250 leituras por segundo; os outros, cerca de 10.</div>
+    <div style="overflow-x:auto"><table id="imus"></table></div>
+  </div>
+
+  <div class="cartao">
+    <h2>Tabela de transições dos LM393</h2>
+    <div class="linha">
+      <select id="caminho" onchange="carregarTabela()">
+        <option value="espiral">Espiral (S1, S2, S3: cruzamentos)</option>
+        <option value="guarda_chuva">Guarda-chuva (sensores nas pontas)</option>
+      </select>
+      <span id="selo-tabela"></span>
+    </div>
+    <div class="nota">Uma linha por cruzamento, por sentido e por troca (liga ao entrar no feixe, desliga ao sair).
+      Posições em mm ao longo do caminho, a partir da entrada. Os valores provisórios da espiral foram estimados pela
+      foto da placa. Salvar cria uma versão nova; as partidas guardam qual versão usaram.</div>
+    <table id="tabela"></table>
+  </div>
+
+  <div class="cartao largo">
+    <h2>Editar a tabela (JSON)</h2>
+    <textarea id="json"></textarea>
+    <div class="linha" style="margin-top:8px">
+      <input id="referencia" placeholder="Referência usada (ex.: encoder temporário, câmera 240 fps)" style="flex:1">
+      <button onclick="salvarTabela()">Salvar nova versão</button>
+    </div>
+    <div class="msg" id="msg-tabela"></div>
+  </div>
+
+  <div class="cartao largo" id="cartao-auditoria" style="display:none">
+    <h2>Auditoria (últimos registros)</h2>
+    <table id="auditoria"></table>
+  </div>
+</div>
+
+<script src="/comum.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+function escapar(t) { return String(t ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+const api = (metodo, url, corpo) => Trilho.api(metodo, url, corpo);
+const NOMES = { A: "A · guarda-chuva", B: "B · espiral", C: "C · reto" };
+const NOMES_IR = ["ponta A (janela)", "ponta B (janela)", "S1 (espiral)", "S2 (espiral)", "S3 (espiral)"];
+
+async function atualizarStatus() {
+  try {
+    const e = await api("GET", "/api/estado");
+    const b = e.bancada;
+    const pt = e.porta || {};
+    const porta = e.simulador ? "" : pt.aberta ? ` na porta <b>${escapar(pt.aberta)}</b>`
+      : !pt.ligada ? " — desconectada pelo site" : pt.erro ? ` — ${escapar(pt.erro)}` : "";
+    let h = `<p>Bancada: <span class="selo ${b.conectada ? "ok" : "erro"}">${b.conectada ? "conectada" : "desconectada"}</span>${porta}
+      ${e.simulador ? '<span class="selo aviso">simulador</span>' : ""}
+      ${pt.aberta && !b.conectada ? '<br><span class="nota">A porta abriu, mas a caixa não responde: o firmware da caixa (caixa.ino) está gravado nessa placa? Clique em "Conectar ESP32" para ver o motivo.</span>' : ""}</p>
+      <p class="nota">MAC: <b>${escapar(b.mac || "—")}</b> (copie para MAC_BANCADA no firmware do joystick) ·
+      firmware ${escapar(b.versao_fw ?? "—")} · VL53L0X ${b.vl53_ok ? "ok" : "não respondeu"}</p>`;
+    if (e.hardware === "caixa") {
+      // caixa: uma ESP32 com tudo por fio (sem bateria, rádio ou sincronia)
+      h = `<p>Caixa: <span class="selo ${b.conectada ? "ok" : "erro"}">${b.conectada ? "conectada" : "desconectada"}</span>${porta}
+        ${e.simulador ? '<span class="selo aviso">simulador</span>' : ""}</p>
+        <p class="nota">firmware ${escapar(b.versao_fw ?? "—")} · VL53L0X ${b.vl53_ok ? "ok" : "não respondeu"}${b.fila_perdida ? ` · ${b.fila_perdida} linhas descartadas (USB cheia)` : ""}</p>`;
+      h += `<table><tr><th>Joystick</th><th>IMU</th><th>Leituras/s</th></tr>` + ["A", "B", "C"].map(id => {
+        const u = (e.imu || {})[id] || {};
+        return `<tr><td>${NOMES[id]}</td><td><span class="selo ${u.ok ? "ok" : "erro"}">${u.ok ? "respondendo" : "não respondeu"}</span></td>
+          <td>${u.taxa_hz ?? 0}</td></tr>`;
+      }).join("") + "</table>";
+      $("status").innerHTML = h;
+      desenharImus(e.imu || {});
+      $("cartao-msgs").style.display = "";
+      $("msgs").textContent = (e.mensagens || []).join("\n") || "(nenhuma mensagem desde que o Trilho abriu: desligue e ligue o cabo USB da caixa para ela mandar de novo)";
+      $("lm393").innerHTML = [0, 1, 2, 3, 4].map(i => `<span class="lm"><i class="${e.lm393[i] ? "on" : ""}"></i>${NOMES_IR[i]}</span>`).join("");
+      $("vl53").textContent = e.vl53.ativo ? (e.vl53.dist_mm === null ? "fora do alcance" : e.vl53.dist_mm + " mm") : "sem leitura";
+      return;
+    }
+    $("cartao-imus").style.display = "none";
+    h += `<table><tr><th>Joystick</th><th>Estado</th><th>Bateria</th><th>Sincronia</th><th>Sinal</th><th>Pacotes</th></tr>`;
+    for (const id of ["A", "B", "C"]) {
+      const j = e.joysticks[id];
+      if (!j) { h += `<tr><td>${NOMES[id]}</td><td colspan="5"><span class="selo erro">nunca visto</span></td></tr>`; continue; }
+      const s = j.sincronia || {};
+      h += `<tr><td>${NOMES[id]}</td>
+        <td><span class="selo ${j.conectado ? (j.carregando ? "aviso" : "ok") : "erro"}">${j.conectado ? (j.carregando ? "carregando" : escapar(j.estado || "ligado")) : "desligado"}</span></td>
+        <td>${j.bateria_pct ?? "—"}%</td>
+        <td>${s.valido ? `±${s.residuo_ms ?? "?"} ms · deriva ${s.deriva_ppm} ppm` : "aguardando"}</td>
+        <td>${j.rssi} dBm</td><td>${j.pacotes_faltando} faltando · ${j.perdidos} perdidos</td></tr>`;
+    }
+    $("status").innerHTML = h + "</table>";
+    $("lm393").innerHTML = [0, 1, 2, 3, 4].map(i => `<span class="lm"><i class="${e.lm393[i] ? "on" : ""}"></i>${i}</span>`).join("");
+    $("vl53").textContent = e.vl53.ativo ? (e.vl53.dist_mm === null ? "fora do alcance" : e.vl53.dist_mm + " mm") : "sem leitura";
+  } catch (err) { $("status").textContent = "Servidor indisponível: " + err.message; }
+}
+
+function desenharImus(imu) {
+  $("cartao-imus").style.display = "";
+  const f = (v, d) => v === null || v === undefined ? "—" : Number(v).toFixed(d).replace(".", ",");
+  $("imus").innerHTML = `<tr><th>Joystick</th><th>acel. x (g)</th><th>acel. y (g)</th><th>acel. z (g)</th>
+      <th>giro x (°/s)</th><th>giro y (°/s)</th><th>giro z (°/s)</th><th>Leituras/s</th></tr>` +
+    ["A", "B", "C"].map(id => {
+      const u = imu[id] || {}, a = u.acc_g || [], g = u.giro_graus_s || [];
+      return `<tr><td>${NOMES[id]}</td>${[0, 1, 2].map(i => `<td>${f(a[i], 2)}</td>`).join("")}
+        ${[0, 1, 2].map(i => `<td>${f(g[i], 1)}</td>`).join("")}<td>${u.taxa_hz ?? 0}</td></tr>`;
+    }).join("");
+}
+
+async function carregarCalibracoes() {
+  const c = await api("GET", "/api/calibracoes");
+  $("calib-reto").textContent = c.reto ? `trás ${c.reto.dados.tras} mm, frente ${c.reto.dados.frente} mm (versão ${c.reto.versao})` : "ainda não calibrado";
+}
+
+async function carregarTabela() {
+  const c = await api("GET", "/api/calibracoes/transicoes/" + $("caminho").value);
+  const linhas = c ? c.dados.linhas : [];
+  $("selo-tabela").innerHTML = c ? `<span class="selo ${c.padrao ? "aviso" : "ok"}">versão ${c.versao}${c.padrao ? " · valores provisórios" : ""}</span>` : "";
+  $("tabela").innerHTML = `<tr><th>Divisa</th><th>Sensor</th><th>Sentido</th><th>Troca</th><th>Código depois</th><th>Posição (mm)</th><th>±</th></tr>` +
+    linhas.map(l => `<tr><td>${l.divisa}</td><td>${l.sensor}</td><td>${l.sentido}</td><td>${l.troca}</td>
+      <td>${l.codigo_depois == null ? "—" : l.codigo_depois.toString(2).padStart(3, "0")}</td><td>${l.posicao_mm}</td><td>${l.incerteza_mm}</td></tr>`).join("");
+  $("json").value = JSON.stringify(linhas, null, 1);
+}
+async function salvarTabela() {
+  const msg = $("msg-tabela"); msg.style.color = ""; msg.textContent = "";
+  let linhas;
+  try { linhas = JSON.parse($("json").value); } catch (e) { msg.textContent = "JSON inválido: " + e.message; msg.style.color = "var(--vermelho)"; return; }
+  try {
+    const r = await api("PUT", "/api/calibracoes/transicoes/" + $("caminho").value, { linhas, referencia: $("referencia").value });
+    msg.textContent = `Versão ${r.versao} salva.`;
+    carregarTabela();
+  } catch (e) { msg.textContent = e.message; msg.style.color = "var(--vermelho)"; }
+}
+async function carregarAuditoria() {
+  const a = await api("GET", "/api/auditoria?limite=40");
+  $("auditoria").innerHTML = `<tr><th>Quando</th><th>Ação</th><th>Recurso</th><th>Paciente</th><th>Detalhes</th></tr>` +
+    a.map(x => `<tr><td>${new Date(x.quando).toLocaleString("pt-BR")}</td><td>${escapar(x.acao)}</td><td>${escapar(x.recurso)}</td>
+      <td>${x.paciente_id ?? "—"}</td><td>${escapar(JSON.stringify(x.detalhes))}</td></tr>`).join("");
+}
+Trilho.montarUsuario("usuario", "/calibracao").then(u => {
+  if (!u) return;
+  atualizarStatus(); setInterval(atualizarStatus, 500);
+  carregarCalibracoes(); carregarTabela();
+  if (u.perfil === "administrador") { $("cartao-auditoria").style.display = ""; carregarAuditoria(); }
+});
+</script>
+</body>
+</html>
