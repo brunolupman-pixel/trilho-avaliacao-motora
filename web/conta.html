@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trilho — Configurações da conta</title>
+<style>
+  :root { --fundo:#f4f6fb; --cartao:#fff; --texto:#1d2433; --suave:#667085; --linha:#e3e7ef; --azul:#2f6fed;
+          --vermelho:#dc2626; --verde:#16a34a; --laranja:#f59e0b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--fundo); color:var(--texto); }
+  .topo { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 28px; background:var(--cartao); border-bottom:1px solid var(--linha); }
+  .topo h1 { font-size:20px; margin:0; }
+  .topo .direita { display:flex; gap:14px; align-items:center; flex-wrap:wrap; font-size:14px; }
+  a.botao-link { color:var(--azul); font-weight:600; text-decoration:none; font-size:14px; }
+  .usuario-logado { color:var(--suave); }
+  .cartao { background:var(--cartao); border:1px solid var(--linha); border-radius:16px; padding:24px; max-width:560px; margin:24px auto; }
+  .perfil-topo { display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
+  .perfil-topo .avatar { box-shadow: 0 0 0 4px #fff, 0 0 0 5px #e3e7ef; }
+  .perfil-topo .nome { font-size:22px; font-weight:700; margin:0; color:var(--texto); }
+  .perfil-topo .ocup { color:var(--suave); font-size:14px; margin:2px 0 0; }
+  .foto-botoes { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .foto-botoes button { margin:0; padding:7px 14px; font-size:13px; }
+  button.secundario { background:#e8f0ff; color:var(--azul); }
+  .grade2 { display:grid; grid-template-columns:1fr 1fr; gap:0 14px; }
+  .somente-leitura { background:#f8fafc; color:var(--suave); }
+  @media (max-width:560px) { .grade2 { grid-template-columns:1fr; } }
+  h2 { font-size:17px; margin:0 0 8px; }
+  p { color:var(--suave); font-size:14px; }
+  .aviso { background:#fff4e0; color:#b45309; padding:10px 12px; border-radius:10px; font-size:14px; }
+  label { display:block; font-size:14px; color:var(--suave); margin:14px 0 4px; }
+  input { font:inherit; width:100%; padding:10px 12px; border:1px solid var(--linha); border-radius:10px; }
+  button { font:inherit; margin-top:18px; padding:10px 18px; border:0; border-radius:10px; background:var(--azul); color:#fff; font-weight:600; cursor:pointer; }
+  .msg { font-size:14px; min-height:1.2em; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="topo"><h1>Configurações da conta</h1><div class="direita" id="usuario"></div></div>
+<div class="cartao">
+  <div class="aviso" id="aviso" style="display:none; margin-bottom:16px">Sua senha é provisória. Crie uma senha pessoal para continuar.</div>
+  <div class="perfil-topo">
+    <div id="foto-grande"></div>
+    <div>
+      <p class="nome" id="nome-titulo"></p>
+      <p class="ocup" id="ocup-titulo"></p>
+      <div class="foto-botoes">
+        <button type="button" onclick="$('arquivo-foto').click()">📷 Trocar foto</button>
+        <button type="button" class="secundario" id="btn-remover-foto" onclick="removerFoto()">Remover foto</button>
+        <input type="file" id="arquivo-foto" accept="image/jpeg,image/png,image/webp" hidden onchange="trocarFoto(this.files[0])">
+      </div>
+      <div class="msg" id="msg-foto"></div>
+    </div>
+  </div>
+</div>
+<div class="cartao">
+  <h2>Dados do perfil</h2>
+  <form onsubmit="salvarDados(event)">
+    <label for="nome">Nome</label><input id="nome" required minlength="2" maxlength="120" autocomplete="name">
+    <div class="grade2">
+      <div><label for="registro">Registro profissional</label><input id="registro" maxlength="40" placeholder="Ex.: CREFITO-3 123456-F"></div>
+      <div><label for="perfil">Ocupação (perfil de acesso)</label><input id="perfil" class="somente-leitura" readonly></div>
+    </div>
+    <label for="email">E-mail (login)</label><input id="email" class="somente-leitura" readonly>
+    <p style="margin:4px 0 0;font-size:12px">E-mail e perfil de acesso são alterados pelo administrador (página Equipe).</p>
+    <button>Salvar dados</button>
+    <div class="msg" id="msg-dados"></div>
+  </form>
+</div>
+<div class="cartao">
+  <h2>Trocar senha</h2>
+  <form onsubmit="trocar(event)">
+    <label for="atual">Senha atual</label><input id="atual" type="password" required autocomplete="current-password">
+    <label for="nova">Nova senha</label><input id="nova" type="password" required autocomplete="new-password">
+    <p style="margin:4px 0 0;font-size:12px">Pelo menos 8 caracteres, com letras e números.</p>
+    <label for="nova2">Repita a nova senha</label><input id="nova2" type="password" required autocomplete="new-password">
+    <button>Salvar nova senha</button>
+    <div class="msg" id="msg"></div>
+  </form>
+</div>
+<script src="/comum.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+async function trocar(ev) {
+  ev.preventDefault();
+  const m = $("msg"); m.style.color = "var(--vermelho)"; m.textContent = "";
+  if ($("nova").value !== $("nova2").value) { m.textContent = "As senhas novas não são iguais."; return; }
+  try {
+    await Trilho.api("POST", "/api/auth/trocar-senha", { atual: $("atual").value, nova: $("nova").value });
+    m.style.color = "var(--verde)"; m.textContent = "Senha alterada. As outras sessões abertas foram encerradas.";
+    ["atual", "nova", "nova2"].forEach(i => $(i).value = "");
+    if (Trilho.usuario && Trilho.usuario.deve_trocar_senha) setTimeout(() => location.href = Trilho.usuario.perfil === "tecnico" ? "/calibracao" : "/", 1200);
+  } catch (e) { m.textContent = e.message; }
+}
+function mostrarConta(u) {
+  Trilho.usuario = u;
+  $("foto-grande").innerHTML = Trilho.avatar(u, 112);
+  $("nome-titulo").textContent = u.nome;
+  $("ocup-titulo").textContent = Trilho.ocupacao(u) + " · " + u.email;
+  $("btn-remover-foto").style.display = u.foto_versao ? "" : "none";
+  $("nome").value = u.nome; $("registro").value = u.registro_profissional || "";
+  $("perfil").value = u.perfil_nome; $("email").value = u.email;
+}
+async function atualizarTopo() {
+  await Trilho.montarUsuario("usuario", "/conta");
+  if (Trilho.usuario && Trilho.usuario.deve_trocar_senha) esconderLinks();
+}
+function esconderLinks() {
+  $("usuario").querySelectorAll("a").forEach(a => { if (!/Sair/.test(a.textContent) && !a.classList.contains("conta-chip")) a.style.display = "none"; });
+}
+async function salvarDados(ev) {
+  ev.preventDefault();
+  const m = $("msg-dados"); m.style.color = "var(--vermelho)"; m.textContent = "";
+  try {
+    const u = await Trilho.api("PATCH", "/api/auth/eu", { nome: $("nome").value, registro_profissional: $("registro").value });
+    mostrarConta(u); await atualizarTopo();
+    m.style.color = "var(--verde)"; m.textContent = "Dados salvos.";
+  } catch (e) { m.textContent = e.message; }
+}
+// recorta no centro (quadrado) e reduz para 320 px antes de enviar: a foto fica leve
+function reduzirFoto(arquivo) {
+  return new Promise((ok, falha) => {
+    const img = new Image(), url = URL.createObjectURL(arquivo);
+    img.onload = () => {
+      const lado = Math.min(img.naturalWidth, img.naturalHeight), t = Math.min(320, lado);
+      const cv = document.createElement("canvas"); cv.width = cv.height = t;
+      const ctx = cv.getContext("2d");
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, (img.naturalWidth - lado) / 2, (img.naturalHeight - lado) / 2, lado, lado, 0, 0, t, t);
+      URL.revokeObjectURL(url);
+      ok(cv.toDataURL("image/jpeg", 0.88));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); falha(new Error("não foi possível abrir esta imagem")); };
+    img.src = url;
+  });
+}
+async function trocarFoto(arquivo) {
+  const m = $("msg-foto"); m.style.color = "var(--vermelho)"; m.textContent = "";
+  if (!arquivo) return;
+  try {
+    m.style.color = "var(--suave)"; m.textContent = "Enviando…";
+    const u = await Trilho.api("PUT", "/api/auth/foto", { imagem: await reduzirFoto(arquivo) });
+    mostrarConta(u); await atualizarTopo();
+    m.style.color = "var(--verde)"; m.textContent = "Foto atualizada.";
+  } catch (e) { m.style.color = "var(--vermelho)"; m.textContent = e.message; }
+  $("arquivo-foto").value = "";
+}
+async function removerFoto() {
+  const m = $("msg-foto"); m.textContent = "";
+  try { const u = await Trilho.api("DELETE", "/api/auth/foto"); mostrarConta(u); await atualizarTopo(); }
+  catch (e) { m.style.color = "var(--vermelho)"; m.textContent = e.message; }
+}
+Trilho.montarUsuario("usuario", "/conta").then(u => {
+  if (!u) return;
+  mostrarConta(u);
+  if (u.deve_trocar_senha) { $("aviso").style.display = ""; esconderLinks(); }
+});
+</script>
+</body>
+</html>

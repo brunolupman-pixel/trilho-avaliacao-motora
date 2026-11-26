@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trilho — Entrar</title>
+<style>
+  :root { --fundo:#f4f6fb; --cartao:#fff; --texto:#1d2433; --suave:#667085; --linha:#e3e7ef; --azul:#2f6fed; --vermelho:#dc2626; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
+         font-family:"Segoe UI",system-ui,sans-serif; background:var(--fundo); color:var(--texto); }
+  .cartao { background:var(--cartao); border:1px solid var(--linha); border-radius:20px; padding:32px; width:100%; max-width:400px; }
+  .logo { display:flex; align-items:center; gap:10px; font-size:24px; font-weight:700; margin-bottom:6px; }
+  .logo span { width:14px; height:14px; border-radius:50%; background:var(--azul); box-shadow:18px 0 0 #16a34a, 36px 0 0 #f59e0b; margin-right:40px; }
+  h1 { font-size:18px; font-weight:600; margin:16px 0 4px; }
+  p { color:var(--suave); font-size:14px; margin:0 0 12px; }
+  label { display:block; font-size:14px; color:var(--suave); margin:14px 0 4px; }
+  input { font:inherit; width:100%; padding:10px 12px; border:1px solid var(--linha); border-radius:10px; }
+  button:not(.botao-contraste) { font:inherit; width:100%; margin-top:20px; padding:12px; border:0; border-radius:10px; background:var(--azul);
+           color:#fff; font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.6; cursor:default; }
+  .erro { color:var(--vermelho); font-size:14px; min-height:1.2em; margin-top:10px; }
+  .dica { font-size:12px; color:var(--suave); margin-top:4px; }
+  /* apresentação ao lado do login (no celular, em cima) */
+  .entrada { display:flex; align-items:center; justify-content:center; gap:64px; width:100%; max-width:980px; flex-wrap:wrap; }
+  .entrada .cartao { flex:0 1 400px; }
+  .apresentacao { flex:1 1 380px; max-width:460px; }
+  .apresentacao img { width:100%; max-width:440px; height:auto; display:block; }
+  .apresentacao .sigla { font-size:17px; color:#344054; margin:20px 0 0; line-height:1.5; letter-spacing:.1px; }
+  .apresentacao .sigla b { color:var(--azul); font-weight:700; }
+  .apresentacao .frase { font-size:16px; color:#475467; margin:12px 0 0; line-height:1.5; }
+  @media (max-width: 860px) { .entrada { gap:28px; } .apresentacao { flex-basis:100%; } }
+  html.baixa-visao .apresentacao .sigla, html.baixa-visao .apresentacao .frase { color:#000; }
+  html.baixa-visao .apresentacao .sigla b { color:#000; text-decoration:underline; }
+</style>
+</head>
+<body>
+<div class="entrada">
+<div class="apresentacao">
+  <img src="/marca-trilho.png" alt="Trilho" width="722" height="135">
+  <p class="sigla"><b>T</b>erapia de <b>R</b>eabilitação <b>I</b>nterativa <b>L</b>údica de <b>H</b>abilidades <b>O</b>cupacionais</p>
+  <p class="frase">Jogos de reabilitação do membro superior, com medidas do movimento para o acompanhamento clínico.</p>
+</div>
+<div class="cartao">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <button type="button" class="botao-contraste" onclick="Trilho.alternarBaixaVisao(); this.setAttribute('aria-pressed', Trilho.baixaVisao())"
+            title="Letras maiores e contraste mais forte">Aa Alto contraste</button>
+  </div>
+
+  <form id="form-login" style="display:none" onsubmit="entrar(event)">
+    <h1>Entrar</h1>
+    <p>Acesso restrito aos profissionais da clínica.</p>
+    <label for="email">E-mail</label>
+    <input id="email" type="email" autocomplete="username" required autofocus>
+    <label for="senha">Senha</label>
+    <input id="senha" type="password" autocomplete="current-password" required>
+    <button id="btn-login">Entrar</button>
+    <div class="erro" id="erro-login"></div>
+    <p class="dica">Esqueceu a senha? Peça ao administrador para redefinir.</p>
+  </form>
+
+  <form id="form-primeiro" style="display:none" onsubmit="criarAdmin(event)">
+    <h1>Primeiro acesso</h1>
+    <p>Crie a conta do administrador. Ele cadastra os demais profissionais e define quem atende cada paciente.</p>
+    <label for="p-nome">Nome completo</label>
+    <input id="p-nome" required autocomplete="name">
+    <label for="p-email">E-mail (será o login)</label>
+    <input id="p-email" type="email" required autocomplete="username">
+    <label for="p-registro">Registro profissional (opcional)</label>
+    <input id="p-registro" placeholder="Ex.: CREFITO-3 123456-F">
+    <label for="p-senha">Senha</label>
+    <input id="p-senha" type="password" required autocomplete="new-password">
+    <div class="dica">Pelo menos 8 caracteres, com letras e números.</div>
+    <label for="p-senha2">Repita a senha</label>
+    <input id="p-senha2" type="password" required autocomplete="new-password">
+    <button id="btn-primeiro">Criar administrador e entrar</button>
+    <div class="erro" id="erro-primeiro"></div>
+  </form>
+</div>
+</div>
+
+<script src="/comum.js"></script>
+<script>
+document.querySelector(".botao-contraste").setAttribute("aria-pressed", Trilho.baixaVisao());
+const $ = id => document.getElementById(id);
+const volta = new URLSearchParams(location.search).get("volta");
+
+function destino(u) {
+  if (u.deve_trocar_senha) return "/conta";
+  if (volta && volta.startsWith("/") && !volta.startsWith("//")) return volta;
+  return u.perfil === "tecnico" ? "/calibracao" : "/";
+}
+async function post(url, corpo) {
+  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+  let d = null; try { d = await r.json(); } catch {}
+  if (!r.ok) throw new Error((d && d.detail) || "erro " + r.status);
+  return d;
+}
+async function entrar(ev) {
+  ev.preventDefault();
+  $("erro-login").textContent = ""; $("btn-login").disabled = true;
+  try { location.href = destino(await post("/api/auth/login", { email: $("email").value, senha: $("senha").value })); }
+  catch (e) { $("erro-login").textContent = e.message; $("senha").value = ""; $("senha").focus(); }
+  finally { $("btn-login").disabled = false; }
+}
+async function criarAdmin(ev) {
+  ev.preventDefault();
+  const erro = $("erro-primeiro"); erro.textContent = "";
+  if ($("p-senha").value !== $("p-senha2").value) { erro.textContent = "As senhas não são iguais."; return; }
+  $("btn-primeiro").disabled = true;
+  try {
+    const u = await post("/api/auth/primeiro-acesso", { nome: $("p-nome").value, email: $("p-email").value,
+      senha: $("p-senha").value, registro_profissional: $("p-registro").value });
+    location.href = destino(u);
+  } catch (e) { erro.textContent = e.message; }
+  finally { $("btn-primeiro").disabled = false; }
+}
+document.querySelectorAll("input").forEach(i => i.addEventListener("input", () => { $("erro-login").textContent = ""; $("erro-primeiro").textContent = ""; }));
+fetch("/api/auth/estado").then(r => r.json()).then(e => {
+  if (e.usuario) { location.href = destino(e.usuario); return; }
+  $(e.primeiro_acesso ? "form-primeiro" : "form-login").style.display = "";
+  (e.primeiro_acesso ? $("p-nome") : $("email")).focus();
+});
+</script>
+</body>
+</html>

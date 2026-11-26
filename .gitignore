@@ -1,0 +1,17 @@
+# dados de pacientes e banco local: nunca vão para o repositório
+*.db
+*.db-journal
+*.sqlite
+dados/
+brutos/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# sistema
+.DS_Store
+Thumbs.db

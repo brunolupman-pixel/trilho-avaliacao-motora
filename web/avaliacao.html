@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trilho — Avaliação</title>
+<style>
+  :root { --fundo:#f4f6fb; --cartao:#fff; --texto:#1d2433; --suave:#667085; --linha:#e3e7ef; --azul:#2f6fed;
+          --azul-claro:#e8f0ff; --verde:#16a34a; --verde-claro:#e7f7ed; --laranja:#f59e0b; --vermelho:#dc2626; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--fundo); color:var(--texto); font-size:15px; }
+  .topo { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 28px; background:var(--cartao); border-bottom:1px solid var(--linha); }
+  .topo h1 { font-size:20px; margin:0; }
+  .topo .direita { display:flex; gap:14px; align-items:center; flex-wrap:wrap; font-size:14px; }
+  a.botao-link { color:var(--azul); font-weight:600; text-decoration:none; font-size:14px; }
+  .usuario-logado { color:var(--suave); }
+  .conteudo { max-width:1150px; margin:0 auto; padding:24px; display:flex; flex-direction:column; gap:20px; }
+  .cartao { background:var(--cartao); border:1px solid var(--linha); border-radius:16px; padding:20px; }
+  h2 { font-size:17px; margin:0 0 12px; font-weight:600; }
+  h3 { font-size:15px; margin:18px 0 8px; font-weight:600; color:var(--azul); }
+  .linha-titulo { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .linha-titulo h2 { margin:0; }
+  .filtros { display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
+  .filtros label, .campos label { display:block; font-size:13px; color:var(--suave); margin-bottom:4px; }
+  select, input, textarea { font:inherit; padding:8px 10px; border:1px solid var(--linha); border-radius:10px; background:#fff; }
+  textarea { width:100%; min-height:64px; resize:vertical; }
+  button { font:inherit; cursor:pointer; border:0; border-radius:10px; padding:8px 14px; font-weight:600; background:var(--azul); color:#fff; }
+  button.secundario { background:var(--azul-claro); color:var(--azul); }
+  .campos { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; }
+  .campos .largo { grid-column: 1 / -1; }
+  .campos input, .campos select { width:100%; }
+  .consent { display:flex; gap:8px; align-items:flex-start; font-size:14px; margin-top:14px; }
+  .consent input { width:auto; margin-top:3px; }
+  .erro { color:var(--vermelho); font-size:14px; min-height:1.2em; margin-top:8px; }
+  .ficha { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:4px 24px; font-size:14px; }
+  .ficha div { padding:6px 0; border-bottom:1px solid var(--linha); }
+  .ficha b { display:block; font-size:12px; color:var(--suave); font-weight:600; }
+  .ficha .largo { grid-column: 1 / -1; }
+  .grafico-area { display:grid; grid-template-columns: 1fr 300px; gap:20px; align-items:start; }
+  .explica { background:var(--fundo); border-radius:12px; padding:14px; font-size:14px; }
+  .explica b { display:block; margin-bottom:6px; }
+  .explica p { margin:6px 0; }
+  .melhora { display:inline-block; font-size:12px; padding:2px 8px; border-radius:99px; font-weight:600; margin-top:4px; }
+  .melhora.maior, .melhora.menor { background:var(--verde-claro); color:var(--verde); }
+  .melhora.contexto { background:#fff4e0; color:#b45309; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--linha); white-space:nowrap; }
+  th { color:var(--suave); font-weight:600; cursor:help; }
+  td.num { text-align:right; font-variant-numeric: tabular-nums; }
+  td.texto { white-space:normal; min-width:180px; }
+  .tabela-rolavel { overflow-x:auto; }
+  .alerta { color:#b45309; font-weight:600; cursor:help; }
+  .vazio { color:var(--suave); padding:16px 0; text-align:center; }
+  .nota { color:var(--suave); font-size:13px; }
+  details { border-bottom:1px solid var(--linha); padding:10px 0; }
+  details summary { cursor:pointer; font-weight:600; }
+  details p { margin:6px 0 0 0; font-size:14px; }
+  .oculto { display:none !important; }
+  @media (max-width: 800px) { .grafico-area { grid-template-columns: 1fr; } }
+  .braco-tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .braco-tag.acometido { background: #e8f0ff; color: #1d4ed8; }
+  .braco-tag.sadio { background: #fff1e6; color: #c2410c; }
+  .link-guia { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; margin-left:4px;
+    border-radius:50%; background:#e8f0ff; color:#1d4ed8; font-size:11px; font-weight:700; text-decoration:none;
+    vertical-align:middle; cursor:pointer; border:1px solid #c7d7fe; }
+  .link-guia:hover, .link-guia:focus-visible { background:#2f6fed; color:#fff; outline:none; }
+  .link-guia-texto { font-size:13px; font-weight:600; color:#1d4ed8; text-decoration:none; }
+  .link-guia-texto:hover { text-decoration:underline; }
+  details.destaque-guia { background:#fff7e6; box-shadow:0 0 0 3px #f59e0b; border-radius:8px; padding-left:10px; padding-right:10px;
+    transition: background .4s, box-shadow .4s; }
+  details .voltar-guia { font-size:12px; margin-top:6px; display:inline-block; }
+  /* ===== principais metas ===== */
+  #cartao-metas { border: 2px solid #c7d7fe; background: linear-gradient(180deg, #f5f8ff 0, #fff 120px); }
+  .metas-grade { display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap:14px; margin-top:12px; }
+  .meta { background:#fff; border:1px solid var(--linha); border-left:6px solid #98a2b3; border-radius:14px; padding:14px 16px;
+    cursor:pointer; transition: box-shadow .15s, transform .15s; position:relative; }
+  .meta:hover, .meta:focus-visible { box-shadow:0 4px 16px rgba(16,24,40,.12); transform:translateY(-1px); outline:none; }
+  .meta.melhora-ok { border-left-color:#16a34a; } .meta.piora { border-left-color:#dc2626; }
+  .meta.estavel { border-left-color:#f59e0b; } .meta.atingida { border-left-color:#16a34a; background:#f0fdf4; }
+  .meta .num-meta { position:absolute; top:10px; right:12px; font-size:12px; font-weight:700; color:#98a2b3; }
+  .meta h4 { margin:0; font-size:15px; padding-right:24px; }
+  .meta .jogo { font-size:12px; color:var(--suave); margin:2px 0 8px; }
+  .meta .valor { font-size:30px; font-weight:800; line-height:1.1; font-variant-numeric: tabular-nums; }
+  .meta .valor small { font-size:13px; font-weight:600; color:var(--suave); margin-left:4px; }
+  .meta .delta { font-size:13px; font-weight:700; margin-top:2px; }
+  .meta .delta.bom { color:#15803d; } .meta .delta.ruim { color:#b91c1c; } .meta .delta.neutro { color:#667085; }
+  .meta .alvo { font-size:12px; color:#344054; margin-top:8px; }
+  .meta .barra { height:8px; background:#eef2f6; border-radius:99px; overflow:hidden; margin-top:4px; }
+  .meta .barra i { display:block; height:100%; background:#2f6fed; border-radius:99px; }
+  .meta.atingida .barra i { background:#16a34a; }
+  .meta canvas { width:100%; height:46px; display:block; margin-top:8px; }
+  .meta .rodape { font-size:11px; color:var(--suave); margin-top:6px; display:flex; justify-content:space-between; gap:6px; }
+  .meta .selo { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; background:#dcfce7; color:#15803d; margin-left:6px; vertical-align:middle; }
+  .meta .obs { font-size:12px; color:#475467; margin-top:6px; font-style:italic; white-space:normal; }
+  .meta-vazia { border:2px dashed #c7d7fe; border-radius:14px; padding:22px; text-align:center; color:var(--suave); }
+  .editor-metas { margin-top:14px; background:#fff; border:1px solid var(--linha); border-radius:14px; padding:14px; }
+  .linha-meta { display:grid; grid-template-columns: 24px minmax(0,1.1fr) minmax(0,1.5fr) minmax(0,1.1fr) minmax(0,.7fr) minmax(0,1.3fr) 32px; gap:8px; align-items:end; padding:8px 0; border-bottom:1px solid var(--linha); }
+  .linha-meta .n { font-weight:800; color:#2f6fed; padding-bottom:8px; }
+  .linha-meta label { font-size:11px; }
+  .linha-meta select, .linha-meta input { width:100%; min-width:0; box-sizing:border-box; }
+  .linha-meta button.remover { padding:6px; background:none; color:#b91c1c; font-size:18px; }
+  @media (max-width: 900px) { .linha-meta { grid-template-columns: 1fr 1fr; } .linha-meta .n { grid-column: 1 / -1; } }
+</style>
+</head>
+<body>
+<div class="topo">
+  <h1>Avaliação — área do profissional</h1>
+  <div class="direita"><a class="botao-link" href="/api/exportar.csv">Exportar CSV</a><span id="usuario" style="display:contents"></span></div>
+</div>
+<div class="conteudo">
+
+  <div class="cartao">
+    <div class="filtros">
+      <div><label>Paciente</label><select id="paciente" onchange="trocarPaciente()"></select></div>
+      <div><button onclick="abrirForm('novo')">+ Novo paciente</button></div>
+    </div>
+    <p class="nota" id="nota-pacientes"></p>
+  </div>
+
+  <!-- ===== cadastro / edição da ficha ===== -->
+  <div class="cartao oculto" id="cartao-form">
+    <h2 id="form-titulo">Novo paciente</h2>
+    <form id="form-paciente" onsubmit="salvarForm(event)">
+      <h3 style="margin-top:0">Identificação</h3>
+      <div class="campos">
+        <div class="largo"><label>Nome completo *</label><input name="nome" required maxlength="120"></div>
+      </div>
+
+      <h3>Diagnóstico e lesão</h3>
+      <div class="campos">
+        <div><label>Condição</label>
+          <select name="condicao">
+            <option value="">—</option>
+            <option value="avc_isquemico">AVC isquêmico</option>
+            <option value="avc_hemorragico">AVC hemorrágico</option>
+            <option value="paralisia_cerebral">Paralisia cerebral</option>
+            <option value="tce">Traumatismo cranioencefálico</option>
+            <option value="lesao_medular">Lesão medular</option>
+            <option value="esclerose_multipla">Esclerose múltipla</option>
+            <option value="outra">Outra</option>
+          </select></div>
+        <div><label>Detalhe do diagnóstico</label><input name="condicao_detalhe" maxlength="300" placeholder="Ex.: ACM esquerda, CID"></div>
+        <div><label>Data da lesão</label><input name="data_lesao" type="date"></div>
+        <div><label>Lado acometido *</label>
+          <select name="lado"><option value="direito">Direito</option><option value="esquerdo">Esquerdo</option><option value="bilateral">Bilateral</option></select></div>
+        <div><label>Mão dominante (antes da lesão)</label>
+          <select name="dominancia"><option value="">—</option><option value="direita">Direita</option><option value="esquerda">Esquerda</option><option value="ambidestro">Ambidestro</option></select></div>
+      </div>
+
+      <div id="bloco-aval-inicial">
+        <h3>Avaliação clínica inicial</h3>
+        <div id="campos-aval-inicial"></div>
+      </div>
+
+      <h3>Tratamento e objetivos</h3>
+      <div class="campos">
+        <div><label>Toxina botulínica</label>
+          <select name="toxina_botulinica"><option value="">Não informado</option><option value="sim">Sim</option><option value="nao">Não</option></select></div>
+        <div><label>Data da última aplicação</label><input name="toxina_ultima_data" type="date"></div>
+        <div><label>Músculos aplicados</label><input name="toxina_musculos" placeholder="Ex.: flexor dos dedos, FCR"></div>
+        <div class="largo"><label>Medicações em uso</label><textarea name="medicacoes" placeholder="Ex.: baclofeno 10 mg 3x/dia"></textarea></div>
+        <div class="largo"><label>Objetivos terapêuticos</label><textarea name="objetivos" placeholder="Ex.: reduzir tônus flexor; abrir a mão para pegar objetos"></textarea></div>
+        <div class="largo"><label>Observações</label><textarea name="observacoes"></textarea></div>
+      </div>
+
+      <label class="consent" id="bloco-consent"><input type="checkbox" name="consentimento">
+        <span>Termo de consentimento para uso dos dados (LGPD) assinado pelo paciente ou responsável *</span></label>
+      <div class="erro" id="erro-form"></div>
+      <div style="display:flex; gap:10px; margin-top:10px">
+        <button>Salvar</button><button type="button" class="secundario" onclick="fecharForm()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ===== ficha ===== -->
+  <div class="cartao oculto" id="cartao-ficha">
+    <div class="linha-titulo"><h2>Ficha clínica</h2><button class="secundario" onclick="abrirForm('editar')">Editar ficha</button></div>
+    <div class="ficha" id="ficha"></div>
+  </div>
+
+  <!-- ===== principais metas ===== -->
+  <div class="cartao oculto" id="cartao-metas">
+    <div class="linha-titulo"><h2>🎯 Principais metas</h2>
+      <button class="secundario" id="btn-editar-metas" onclick="abrirEditorMetas()">Definir metas</button></div>
+    <p class="nota" style="margin:4px 0 0">Até 5 métricas para acompanhar de perto. Valor atual = média das 3 últimas partidas
+      com o braço acometido; a variação é contada a partir da linha de base (média das 3 partidas antes de a meta ser definida).
+      Clique numa meta para ver a evolução completa.</p>
+    <div class="metas-grade" id="metas"></div>
+    <div class="editor-metas oculto" id="editor-metas">
+      <div id="linhas-metas"></div>
+      <div class="erro" id="erro-metas"></div>
+      <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap">
+        <button type="button" class="secundario" id="btn-add-meta" onclick="adicionarLinhaMeta()">+ Adicionar meta</button>
+        <span style="flex:1"></span>
+        <button type="button" class="secundario" onclick="fecharEditorMetas()">Cancelar</button>
+        <button type="button" onclick="salvarMetas()">Salvar metas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== avaliações clínicas ===== -->
+  <div class="cartao oculto" id="cartao-avaliacoes">
+    <div class="linha-titulo"><h2>Avaliações clínicas</h2><button class="secundario" onclick="$('form-aval').classList.toggle('oculto')">+ Nova avaliação</button></div>
+    <form id="form-aval" class="oculto" onsubmit="salvarAvaliacao(event)" style="margin-bottom:16px">
+      <div id="campos-aval-nova"></div>
+      <div class="erro" id="erro-aval"></div>
+      <button>Salvar avaliação</button>
+    </form>
+    <div class="tabela-rolavel" id="avaliacoes"></div>
+    <p class="nota">Reavalie periodicamente com as mesmas escalas para comparar com a evolução medida pelos sensores.</p>
+  </div>
+
+  <!-- ===== métricas dos sensores ===== -->
+  <div class="cartao oculto" id="cartao-metricas">
+    <div class="linha-titulo"><h2>Movimento medido pelos sensores</h2>
+      <div class="filtros">
+        <div><label>Jogo</label>
+          <select id="jogo" onchange="carregarMetricas()">
+            <option value="vidro">Limpar a janela (guarda-chuva)</option>
+            <option value="carro">Pilotar o carro (reto)</option>
+            <option value="bolo">Mexer a massa de bolo (espiral)</option>
+          </select></div>
+        <div><label>Métrica no gráfico</label><select id="metrica" onchange="desenhar()"></select></div>
+      </div></div>
+    <h3 id="titulo-grafico" style="margin-top:0">Evolução</h3>
+    <div class="grafico-area">
+      <canvas id="grafico" height="260" style="width:100%"></canvas>
+      <div class="explica" id="explica"></div>
+    </div>
+    <h3>Partidas</h3>
+    <div class="tabela-rolavel" id="tabela"></div>
+    <p class="nota">Só entram partidas jogadas com os sensores. Compare sempre o mesmo jogo e a mesma dificuldade.
+      No gráfico, o braço acometido aparece em azul e o braço sadio em laranja (tracejado).
+      ⚠ = qualidade dos dados abaixo do esperado (passe o mouse para ver o motivo).</p>
+  </div>
+
+  <div class="cartao">
+    <h2>Guia das métricas</h2>
+    <div id="guia"></div>
+  </div>
+</div>
+
+<script src="/comum.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = Trilho.esc;
+let GUIA = {}, QUAL = {}, partidas = [], pacientes = [], fichaAtual = null, modoForm = null;
+const TEXTO_MELHORA = { maior: "Melhora quando AUMENTA", menor: "Melhora quando DIMINUI", contexto: "Depende do objetivo do exercício" };
+const COLUNAS = {
+  bolo:  ["sparc", "submovimentos", "velocidade_media_mm_s", "velocidade_pico_mm_s", "amplitude_pct", "pausas", "maior_pausa_s", "tremor_rms_m_s2"],
+  carro: ["sparc", "submovimentos", "tempo_de_reacao_s", "mudancas_de_sentido", "amplitude_pct", "tremor_rms_m_s2"],
+  vidro: ["sparc", "submovimentos", "amplitude_pct", "velocidade_media_mm_s", "pausas", "tremor_rms_m_s2"],
+};
+// Atalhos "?" para o guia: abre a explicação certa, rola até ela e destaca por alguns segundos.
+function linkGuia(id, rotulo) {
+  return `<a class="link-guia" href="#guia-${id}" title="O que é e como ler${rotulo ? ": " + esc(rotulo) : ""} (guia das métricas)"
+    aria-label="Ver no guia das métricas" onclick="abrirGuia('${id}'); return false">?</a>`;
+}
+let voltarPara = null;
+function abrirGuia(id) {
+  const d = document.getElementById("guia-" + id);
+  if (!d) return;
+  voltarPara = window.scrollY;
+  document.querySelectorAll("details.destaque-guia").forEach(x => x.classList.remove("destaque-guia"));
+  d.open = true;
+  if (!d.querySelector(".voltar-guia"))
+    d.insertAdjacentHTML("beforeend", `<br><a href="#" class="link-guia-texto voltar-guia" onclick="voltarAosResultados(); return false">↑ voltar aos resultados</a>`);
+  d.scrollIntoView({ behavior: "smooth", block: "center" });
+  d.classList.add("destaque-guia");
+  setTimeout(() => d.classList.remove("destaque-guia"), 2500);
+}
+function voltarAosResultados() { window.scrollTo({ top: voltarPara ?? 0, behavior: "smooth" }); }
+const COR_BRACO = { acometido: "#2f6fed", sadio: "#f97316" };
+const ASH = ["", "0", "1", "1+", "2", "3", "4"];
+// data local (toISOString usaria UTC: depois das 21h no Brasil já seria "amanhã")
+const hoje = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const dataBR = d => d ? new Date(d + "T12:00:00").toLocaleDateString("pt-BR") : "—";
+
+// Campos da avaliação clínica (usados no cadastro e nas reavaliações)
+function camposAvaliacao() {
+  const ash = n => `<select name="${n}">${ASH.map(v => `<option value="${v}">${v === "" ? "—" : v}</option>`).join("")}</select>`;
+  return `<div class="campos">
+    <div><label>Data da avaliação</label><input name="data" type="date" value="${hoje()}" max="${hoje()}"></div>
+    <div><label title="Escala de Ashworth modificada: 0, 1, 1+, 2, 3, 4">Ashworth modificada — flexores do punho</label>${ash("ashworth_punho")}</div>
+    <div><label>Ashworth modificada — flexores dos dedos</label>${ash("ashworth_dedos")}</div>
+    <div><label>Ashworth modificada — flexores do cotovelo</label>${ash("ashworth_cotovelo")}</div>
+    <div><label>Força de preensão — lado acometido (kgf)</label><input name="preensao_acometido_kgf" type="number" min="0" max="100" step="0.1" placeholder="dinamômetro"></div>
+    <div><label>Força de preensão — outro lado (kgf)</label><input name="preensao_nao_acometido_kgf" type="number" min="0" max="100" step="0.1"></div>
+    <div><label>Fugl-Meyer — membro superior (0–66)</label><input name="fugl_meyer_ms" type="number" min="0" max="66" step="1"></div>
+    <div class="largo"><label>Outras escalas</label><textarea name="outras_escalas" placeholder="Ex.: Box and Block 12 blocos; MAL"></textarea></div>
+    <div class="largo"><label>Observações da avaliação</label><textarea name="observacoes"></textarea></div>
+  </div>`;
+}
+function lerCampos(raiz) {
+  const d = {};
+  raiz.querySelectorAll("input[name], select[name], textarea[name]").forEach(el => {
+    d[el.name] = el.type === "checkbox" ? el.checked : el.value.trim();
+  });
+  return d;
+}
+
+// ---------------------------------------------------------------- pacientes
+async function iniciar() {
+  const u = await Trilho.montarUsuario("usuario", "/avaliacao");
+  if (!u) return;
+  const g = await Trilho.api("GET", "/api/metricas/guia");
+  GUIA = g.metricas; QUAL = g.qualidade;
+  $("guia").innerHTML = Object.entries(GUIA).map(([k, m]) => `<details id="guia-${k}"><summary>${esc(m.rotulo)}${m.unidade ? ` (${esc(m.unidade)})` : ""}</summary>
+      <p>${esc(m.o_que_e)}</p><p><i>Como ler:</i> ${esc(m.como_ler)}</p><span class="melhora ${m.melhora}">${TEXTO_MELHORA[m.melhora]}</span></details>`).join("") +
+    `<details id="guia-ashworth"><summary>Escala de Ashworth modificada</summary><p>0 = sem aumento do tônus; 1 = leve aumento, resistência mínima no fim do movimento;
+      1+ = leve aumento, resistência mínima em menos da metade do movimento; 2 = aumento mais marcado na maior parte do movimento;
+      3 = aumento considerável, movimento passivo difícil; 4 = parte rígida.</p>
+      <p><i>Como ler:</i> avalia a resistência ao estiramento passivo (espasticidade) de cada grupo muscular. Compare sempre o
+      mesmo grupo, na mesma posição e com o mesmo examinador quando possível; a escala é ordinal (1+ fica entre 1 e 2).</p>
+      <span class="melhora menor">Melhora quando DIMINUI</span></details>` +
+    `<details id="guia-preensao"><summary>Força de preensão (kgf)</summary><p>Força máxima de preensão palmar medida com
+      dinamômetro, no lado acometido e no outro lado.</p><p><i>Como ler:</i> compare o lado acometido com o outro lado
+      (razão acometido ÷ outro lado, em %) e com as medidas anteriores do próprio paciente, usando o mesmo dinamômetro,
+      posição e número de tentativas.</p><span class="melhora maior">Melhora quando AUMENTA</span></details>` +
+    `<details id="guia-fugl-meyer"><summary>Fugl-Meyer — membro superior (motor)</summary><p>Avaliação da função motora
+      do membro superior após lesão neurológica: parte motora de 0 a 66 pontos (ombro/cotovelo/antebraço, punho, mão e
+      coordenação/velocidade).</p><p><i>Como ler:</i> quanto maior a pontuação, melhor a função motora. Compare com as
+      avaliações anteriores do mesmo paciente.</p><span class="melhora maior">Melhora quando AUMENTA</span></details>` +
+    `<details id="guia-qualidade"><summary>Qualidade dos dados</summary>${Object.values(QUAL).map(t => `<p>${esc(t)}</p>`).join("")}</details>`;
+  $("campos-aval-inicial").innerHTML = camposAvaliacao();
+  $("campos-aval-nova").innerHTML = camposAvaliacao();
+  const q = new URLSearchParams(location.search);
+  await carregarPacientes(q.get("paciente"));
+  if (q.get("novo")) abrirForm("novo");
+}
+
+async function carregarPacientes(selecionar) {
+  pacientes = await Trilho.api("GET", "/api/pacientes");
+  $("paciente").innerHTML = pacientes.length
+    ? pacientes.map(p => `<option value="${p.id}">${esc(p.nome)}</option>`).join("")
+    : `<option value="">Nenhum paciente</option>`;
+  $("nota-pacientes").textContent = Trilho.usuario.perfil === "administrador"
+    ? "Como administrador, você vê todos os pacientes."
+    : "Você vê os pacientes vinculados a você. Para ver outro paciente, peça ao administrador.";
+  if (selecionar && pacientes.some(p => p.id == selecionar)) $("paciente").value = selecionar;
+  trocarPaciente();
+}
+
+async function trocarPaciente() {
+  const pid = $("paciente").value;
+  ["cartao-ficha", "cartao-metas", "cartao-avaliacoes", "cartao-metricas"].forEach(id => $(id).classList.toggle("oculto", !pid));
+  if (!pid) return;
+  history.replaceState(null, "", `/avaliacao?paciente=${pid}`);
+  fichaAtual = await Trilho.api("GET", `/api/pacientes/${pid}`);
+  desenharFicha();
+  carregarMetas();
+  carregarAvaliacoes();
+  carregarMetricas();
+}
+
+function desenharFicha() {
+  const f = fichaAtual.ficha;
+  const anos = f.data_lesao ? ((Date.now() - new Date(f.data_lesao)) / 31557600000) : null;
+  const itens = [
+    ["Condição", (f.condicao_nome || "—") + (f.condicao_detalhe ? ` — ${f.condicao_detalhe}` : "")],
+    ["Data da lesão", f.data_lesao ? `${dataBR(f.data_lesao)} (há ${anos < 1 ? Math.round(anos * 12) + " meses" : anos.toFixed(1).replace(".", ",") + " anos"})` : "—"],
+    ["Lado acometido", f.lado], ["Mão dominante", f.dominancia || "—"],
+    ["Toxina botulínica", f.toxina_botulinica === null ? "não informado" : f.toxina_botulinica
+      ? `sim — última aplicação ${dataBR(f.toxina_ultima_data)}${f.toxina_musculos ? ` (${f.toxina_musculos})` : ""}` : "não"],
+    ["Profissionais responsáveis", fichaAtual.responsaveis.map(r => r.nome).join(", ") || "—"],
+  ];
+  const longos = [["Medicações", f.medicacoes], ["Objetivos terapêuticos", f.objetivos], ["Observações", f.observacoes]];
+  $("ficha").innerHTML = itens.map(([k, v]) => `<div><b>${k}</b>${esc(v)}</div>`).join("") +
+    longos.map(([k, v]) => `<div class="largo"><b>${k}</b>${v ? esc(v).replace(/\n/g, "<br>") : "—"}</div>`).join("");
+}
+
+function abrirForm(modo) {
+  modoForm = modo;
+  const form = $("form-paciente");
+  form.reset();
+  $("erro-form").textContent = "";
+  $("form-titulo").textContent = modo === "novo" ? "Novo paciente" : "Editar ficha clínica";
+  $("bloco-aval-inicial").classList.toggle("oculto", modo !== "novo");
+  $("bloco-consent").classList.toggle("oculto", modo !== "novo");
+  // na edição o bloco da avaliação inicial sai do formulário (evita campos com o mesmo nome)
+  $("campos-aval-inicial").innerHTML = modo === "novo" ? camposAvaliacao() : "";
+  if (modo === "editar") {
+    const f = fichaAtual.ficha;
+    form.nome.value = fichaAtual.nome;
+    for (const k of ["condicao", "condicao_detalhe", "data_lesao", "lado", "dominancia", "toxina_ultima_data", "toxina_musculos", "medicacoes", "objetivos", "observacoes"])
+      if (form[k]) form[k].value = f[k] ?? "";
+    form.toxina_botulinica.value = f.toxina_botulinica === null ? "" : f.toxina_botulinica ? "sim" : "nao";
+  }
+  $("cartao-form").classList.remove("oculto");
+  $("cartao-form").scrollIntoView({ behavior: "smooth" });
+  form.nome.focus();
+}
+function fecharForm() { $("cartao-form").classList.add("oculto"); }
+
+async function salvarForm(ev) {
+  ev.preventDefault();
+  const form = $("form-paciente"), erro = $("erro-form");
+  erro.textContent = "";
+  const geral = {};
+  form.querySelectorAll("input[name], select[name], textarea[name]").forEach(el => {
+    if (el.closest("#bloco-aval-inicial")) return;
+    geral[el.name] = el.type === "checkbox" ? el.checked : el.value.trim();
+  });
+  geral.toxina_botulinica = geral.toxina_botulinica === "" ? null : geral.toxina_botulinica === "sim";
+  try {
+    if (modoForm === "novo") {
+      if (!geral.consentimento) { erro.textContent = "Registre o termo de consentimento antes de cadastrar."; return; }
+      geral.avaliacao_inicial = lerCampos($("bloco-aval-inicial"));
+      const p = await Trilho.api("POST", "/api/pacientes", geral);
+      fecharForm();
+      await carregarPacientes(p.id);
+    } else {
+      delete geral.consentimento;
+      fichaAtual = await Trilho.api("PATCH", `/api/pacientes/${$("paciente").value}`, geral);
+      fecharForm();
+      await carregarPacientes(fichaAtual.id);
+    }
+  } catch (e) { erro.textContent = e.message; }
+}
+
+// ---------------------------------------------------------------- principais metas
+const NOMES_JOGO = { vidro: "Limpar a janela", carro: "Pilotar o carro", bolo: "Mexer a massa de bolo" };
+const ICONE_JOGO = { vidro: "🪟", carro: "🚗", bolo: "🥣" };
+let metas = [], historicoMetas = {};
+const media = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+function fmtMeta(v) {
+  if (v === null || v === undefined || !isFinite(v)) return "—";
+  const a = Math.abs(v), casas = a >= 100 ? 0 : a >= 10 ? 1 : 2;
+  return v.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
+}
+async function carregarMetas() {
+  const pid = $("paciente").value;
+  if (!pid) return;
+  metas = await Trilho.api("GET", `/api/pacientes/${pid}/metas`);
+  historicoMetas = {};
+  const jogos = [...new Set(metas.map(m => m.jogo))];
+  await Promise.all(jogos.map(async j => {
+    historicoMetas[j] = (await Trilho.api("GET", `/api/pacientes/${pid}/historico?jogo=${j}`))
+      .filter(p => p.metricas && Object.keys(p.metricas).length);
+  }));
+  desenharMetas();
+}
+// Situação de uma meta a partir do histórico do jogo
+function analisarMeta(m) {
+  const g = GUIA[m.metrica] || {}, hist = historicoMetas[m.jogo] || [];
+  const serie = braco => hist.filter(p => (p.membro || "acometido") === braco && typeof p.metricas[m.metrica] === "number")
+    .map(p => ({ d: new Date(p.data), v: p.metricas[m.metrica] }));
+  const ac = serie("acometido"), sad = serie("sadio");
+  const criada = new Date(m.criada_em);
+  const antes = ac.filter(p => p.d <= criada);
+  const baseSerie = antes.length ? antes.slice(-3) : ac.slice(0, 3);
+  const base = media(baseSerie.map(p => p.v));
+  const atual = ac.length ? media(ac.slice(-3).map(p => p.v)) : null;
+  const alvo = m.alvo_braco_sadio ? (sad.length ? media(sad.slice(-3).map(p => p.v)) : null) : m.alvo;
+  // sentido de melhora: o do guia; só "depende do objetivo" usa o alvo para saber o sentido
+  const temAlvo = alvo !== null && alvo !== undefined;
+  let dir = g.melhora === "maior" ? 1 : g.melhora === "menor" ? -1 : 0;
+  if (dir === 0 && temAlvo && base !== null && alvo !== base) dir = Math.sign(alvo - base);
+  const r = { g, ac, sad, base, atual, alvo, dir, situacao: "sem-dados", progresso: null, atingida: false };
+  if (atual === null) return r;
+  if (base !== null && ac.length > baseSerie.length) {
+    const rel = base !== 0 ? (atual - base) / Math.abs(base) : (atual - base);
+    r.rel = rel;
+    r.situacao = dir === 0 ? "neutro" : Math.abs(rel) < 0.05 ? "estavel" : dir * (atual - base) > 0 ? "melhora-ok" : "piora";
+  } else r.situacao = "inicio";
+  if (temAlvo && dir !== 0) {
+    r.atingida = dir * (atual - alvo) >= 0;                 // chegou ao alvo (ou passou dele) no sentido da melhora
+    if (base !== null && dir * (alvo - base) > 0) r.progresso = Math.max(0, Math.min(1, (atual - base) / (alvo - base)));
+    else if (r.atingida) r.progresso = 1;                    // já começou além do alvo (ex.: melhor que o braço sadio)
+  }
+  if (r.atingida) r.situacao = "atingida";
+  return r;
+}
+function desenharMetas() {
+  $("btn-editar-metas").textContent = metas.length ? "Editar metas" : "Definir metas";
+  if (!metas.length) {
+    $("metas").innerHTML = `<div class="meta-vazia" style="grid-column:1/-1">Nenhuma meta definida para este paciente.<br>
+      <button style="margin-top:10px; width:auto" onclick="abrirEditorMetas()">Escolher até 5 metas</button></div>`;
+    return;
+  }
+  $("metas").innerHTML = metas.map((m, i) => {
+    const a = analisarMeta(m), g = a.g, un = g.unidade ? `<small>${esc(g.unidade)}</small>` : "";
+    let delta = `<div class="delta neutro">${a.situacao === "inicio" ? "Linha de base em formação" : "Sem partidas com sensores ainda"}</div>`;
+    if (a.rel !== undefined) {
+      const seta = a.atual > a.base ? "▲" : a.atual < a.base ? "▼" : "■";
+      const cls = a.dir === 0 || Math.abs(a.rel) < 0.05 ? "neutro" : (a.dir * (a.atual - a.base) > 0 ? "bom" : "ruim");
+      const pct = a.base !== 0 ? ` (${a.rel >= 0 ? "+" : ""}${Math.round(a.rel * 100)}%)` : "";
+      delta = `<div class="delta ${cls}">${seta} ${a.atual - a.base >= 0 ? "+" : ""}${fmtMeta(a.atual - a.base)}${pct} desde a base (${fmtMeta(a.base)})</div>`;
+    }
+    let alvo = "";
+    if (m.alvo_braco_sadio) {
+      const alem = a.atingida && a.base !== null && a.dir * (a.base - a.alvo) >= 0;
+      alvo = a.alvo === null ? `<div class="alvo">Meta: chegar ao braço sadio <i>(sem partidas do braço sadio ainda)</i></div>`
+        : `<div class="alvo">Meta: chegar ao braço sadio (${fmtMeta(a.alvo)})${alem ? " · já está igual ou melhor"
+            : a.progresso !== null ? ` · ${Math.round(a.progresso * 100)}% do caminho` : ""}</div>`;
+    } else if (m.alvo !== null && m.alvo !== undefined) {
+      const sinal = a.dir > 0 ? "≥" : a.dir < 0 ? "≤" : "≈";
+      alvo = `<div class="alvo">Meta: ${sinal} ${fmtMeta(m.alvo)} ${esc(g.unidade || "")}${a.progresso !== null ? ` · ${Math.round(a.progresso * 100)}% do caminho` : ""}</div>`;
+    } else alvo = `<div class="alvo">Sem valor-alvo: acompanhar a tendência</div>`;
+    const barra = a.progresso !== null ? `<div class="barra"><i style="width:${Math.round(a.progresso * 100)}%"></i></div>` : "";
+    const ult = a.ac.length ? a.ac[a.ac.length - 1].d.toLocaleDateString("pt-BR") : "—";
+    return `<div class="meta ${a.situacao}" tabindex="0" role="button" onclick="focarMeta(${i})" onkeydown="if(event.key==='Enter')focarMeta(${i})"
+        title="Ver a evolução completa no gráfico">
+      <span class="num-meta">${i + 1}</span>
+      <h4>${esc(g.rotulo || m.metrica)}${linkGuia(m.metrica, g.rotulo)}${a.atingida ? `<span class="selo">Meta atingida ✓</span>` : ""}</h4>
+      <div class="jogo">${ICONE_JOGO[m.jogo]} ${esc(NOMES_JOGO[m.jogo])} · braço acometido</div>
+      <div class="valor">${fmtMeta(a.atual)}${a.atual !== null ? un : ""}</div>
+      ${delta}${alvo}${barra}
+      <canvas id="mini-meta-${i}"></canvas>
+      ${m.observacao ? `<div class="obs">${esc(m.observacao)}</div>` : ""}
+      <div class="rodape"><span>${a.ac.length} partida${a.ac.length === 1 ? "" : "s"} · última ${ult}</span>
+        <span>${TEXTO_MELHORA[g.melhora] ? (g.melhora === "maior" ? "↑ melhor" : g.melhora === "menor" ? "↓ melhor" : "depende") : ""}</span></div>
+    </div>`;
+  }).join("");
+  metas.forEach((m, i) => miniGrafico($("mini-meta-" + i), analisarMeta(m)));
+  // o "?" do guia não abre o gráfico
+  $("metas").querySelectorAll(".link-guia").forEach(l => l.addEventListener("click", e => e.stopPropagation()));
+}
+function miniGrafico(cv, a) {
+  const w = cv.clientWidth, h = 46, dpr = devicePixelRatio, ctx = cv.getContext("2d");
+  if (!w) return;
+  cv.width = w * dpr; cv.height = h * dpr; ctx.scale(dpr, dpr);
+  const todos = a.ac.concat(a.sad);
+  if (!a.ac.length) { ctx.fillStyle = "#98a2b3"; ctx.font = "11px Segoe UI, sans-serif"; ctx.fillText("sem dados", 4, 28); return; }
+  const vals = todos.map(p => p.v).concat(a.alvo !== null && a.alvo !== undefined ? [a.alvo] : []);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (lo === hi) { lo -= 1; hi += 1; }
+  const t0 = Math.min(...todos.map(p => +p.d)), t1 = Math.max(...todos.map(p => +p.d));
+  const px = d => 4 + (t1 === t0 ? (w - 8) / 2 : (w - 8) * (+d - t0) / (t1 - t0));
+  const py = v => 4 + (h - 8) * (1 - (v - lo) / (hi - lo));
+  if (a.alvo !== null && a.alvo !== undefined) {   // linha do alvo
+    ctx.strokeStyle = "#16a34a"; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(0, py(a.alvo)); ctx.lineTo(w, py(a.alvo)); ctx.stroke(); ctx.setLineDash([]);
+  }
+  for (const [serie, cor, trac] of [[a.sad, COR_BRACO.sadio, [5, 4]], [a.ac, COR_BRACO.acometido, []]]) {
+    if (!serie.length) continue;
+    ctx.strokeStyle = cor; ctx.lineWidth = 2; ctx.setLineDash(trac); ctx.beginPath();
+    serie.forEach((p, k) => k ? ctx.lineTo(px(p.d), py(p.v)) : ctx.moveTo(px(p.d), py(p.v))); ctx.stroke(); ctx.setLineDash([]);
+  }
+  const ul = a.ac[a.ac.length - 1];
+  ctx.fillStyle = COR_BRACO.acometido; ctx.beginPath(); ctx.arc(px(ul.d), py(ul.v), 3.5, 0, 7); ctx.fill();
+}
+async function focarMeta(i) {
+  const m = metas[i];
+  $("jogo").value = m.jogo;
+  await carregarMetricas();
+  $("metrica").value = m.metrica; desenhar();
+  $("cartao-metricas").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+// ---- editor
+function opcoesMetrica(jogo, sel) {
+  const ordem = COLUNAS[jogo].concat(Object.keys(GUIA).filter(k => !COLUNAS[jogo].includes(k)));
+  return ordem.map(k => `<option value="${k}" ${k === sel ? "selected" : ""}>${esc(GUIA[k].rotulo)}${GUIA[k].unidade ? ` (${esc(GUIA[k].unidade)})` : ""}</option>`).join("");
+}
+function linhaMetaHtml(m, i) {
+  const temSadio = fichaAtual && ["direito", "esquerdo"].includes(fichaAtual.lado);
+  const tipo = m.alvo_braco_sadio ? "sadio" : (m.alvo !== null && m.alvo !== undefined && m.alvo !== "") ? "valor" : "nenhum";
+  return `<div class="linha-meta" data-i="${i}">
+    <div class="n">${i + 1}</div>
+    <div><label>Jogo</label><select class="m-jogo" onchange="this.closest('.linha-meta').querySelector('.m-metrica').innerHTML = opcoesMetrica(this.value)">
+      ${Object.entries(NOMES_JOGO).map(([k, n]) => `<option value="${k}" ${k === m.jogo ? "selected" : ""}>${n}</option>`).join("")}</select></div>
+    <div><label>Métrica</label><select class="m-metrica">${opcoesMetrica(m.jogo, m.metrica)}</select></div>
+    <div><label>Tipo de meta</label><select class="m-tipo" onchange="this.closest('.linha-meta').querySelector('.m-alvo').disabled = this.value !== 'valor'">
+      <option value="nenhum" ${tipo === "nenhum" ? "selected" : ""}>Acompanhar tendência</option>
+      <option value="valor" ${tipo === "valor" ? "selected" : ""}>Chegar a um valor</option>
+      ${temSadio ? `<option value="sadio" ${tipo === "sadio" ? "selected" : ""}>Chegar ao braço sadio</option>` : ""}</select></div>
+    <div><label>Valor-alvo</label><input class="m-alvo" type="number" step="any" value="${tipo === "valor" ? m.alvo : ""}" ${tipo === "valor" ? "" : "disabled"}></div>
+    <div><label>Observação (opcional)</label><input class="m-obs" maxlength="300" value="${esc(m.observacao || "")}" placeholder="Ex.: reavaliar em 4 semanas"></div>
+    <button type="button" class="remover" title="Remover esta meta" onclick="removerLinhaMeta(${i})">✕</button>
+  </div>`;
+}
+let rascunhoMetas = [];
+function lerLinhasMetas() {
+  return [...document.querySelectorAll("#linhas-metas .linha-meta")].map(l => {
+    const tipo = l.querySelector(".m-tipo").value;
+    return { jogo: l.querySelector(".m-jogo").value, metrica: l.querySelector(".m-metrica").value,
+             alvo: tipo === "valor" ? l.querySelector(".m-alvo").value : null, alvo_braco_sadio: tipo === "sadio",
+             observacao: l.querySelector(".m-obs").value };
+  });
+}
+function desenharEditorMetas() {
+  $("linhas-metas").innerHTML = rascunhoMetas.length ? rascunhoMetas.map(linhaMetaHtml).join("")
+    : `<div class="vazio">Nenhuma meta. Clique em "+ Adicionar meta".</div>`;
+  $("btn-add-meta").disabled = rascunhoMetas.length >= 5;
+  $("btn-add-meta").textContent = rascunhoMetas.length >= 5 ? "Máximo de 5 metas" : "+ Adicionar meta";
+}
+function abrirEditorMetas() {
+  rascunhoMetas = metas.map(m => ({ ...m }));
+  if (!rascunhoMetas.length) rascunhoMetas.push({ jogo: $("jogo").value || "vidro", metrica: "sparc", alvo: null, alvo_braco_sadio: false });
+  $("erro-metas").textContent = "";
+  $("editor-metas").classList.remove("oculto");
+  desenharEditorMetas();
+}
+function fecharEditorMetas() { $("editor-metas").classList.add("oculto"); }
+function adicionarLinhaMeta() {
+  rascunhoMetas = lerLinhasMetas();
+  if (rascunhoMetas.length >= 5) return;
+  const usadas = new Set(rascunhoMetas.map(m => m.jogo + ":" + m.metrica));
+  const jogo = $("jogo").value || "vidro";
+  const metrica = COLUNAS[jogo].find(k => !usadas.has(jogo + ":" + k)) || "sparc";
+  rascunhoMetas.push({ jogo, metrica, alvo: null, alvo_braco_sadio: false });
+  desenharEditorMetas();
+}
+function removerLinhaMeta(i) { rascunhoMetas = lerLinhasMetas(); rascunhoMetas.splice(i, 1); desenharEditorMetas(); }
+async function salvarMetas() {
+  $("erro-metas").textContent = "";
+  try {
+    metas = await Trilho.api("PUT", `/api/pacientes/${$("paciente").value}/metas`, { metas: lerLinhasMetas() });
+    fecharEditorMetas();
+    await carregarMetas();
+  } catch (e) { $("erro-metas").textContent = e.message; }
+}
+window.addEventListener("resize", () => { if (metas.length) metas.forEach((m, i) => miniGrafico($("mini-meta-" + i), analisarMeta(m))); });
+
+// ---------------------------------------------------------------- avaliações clínicas
+async function carregarAvaliacoes() {
+  const av = await Trilho.api("GET", `/api/pacientes/${$("paciente").value}/avaliacoes`);
+  if (!av.length) { $("avaliacoes").innerHTML = `<div class="vazio">Nenhuma avaliação clínica registrada.</div>`; return; }
+  const n = v => v === null || v === undefined ? "—" : String(v).replace(".", ",");
+  const gA = linkGuia("ashworth", "Escala de Ashworth modificada"), gP = linkGuia("preensao", "Força de preensão");
+  $("avaliacoes").innerHTML = `<table><tr><th>Data</th><th>Ashworth punho${gA}</th><th>Ashworth dedos${gA}</th><th>Ashworth cotovelo${gA}</th>
+    <th>Preensão acometido (kgf)${gP}</th><th>Preensão outro lado (kgf)${gP}</th><th>Fugl-Meyer MS${linkGuia("fugl-meyer", "Fugl-Meyer")}</th><th>Outras escalas</th><th>Profissional</th></tr>` +
+    av.slice().reverse().map(a => `<tr><td>${dataBR(a.data)}${a.inicial ? " <small>(inicial)</small>" : ""}</td>
+      <td class="num">${n(a.ashworth_punho)}</td><td class="num">${n(a.ashworth_dedos)}</td><td class="num">${n(a.ashworth_cotovelo)}</td>
+      <td class="num">${n(a.preensao_acometido_kgf)}</td><td class="num">${n(a.preensao_nao_acometido_kgf)}</td>
+      <td class="num">${n(a.fugl_meyer_ms)}</td><td class="texto">${esc(a.outras_escalas || "")}${a.observacoes ? `<br><small>${esc(a.observacoes)}</small>` : ""}</td>
+      <td>${esc(a.profissional)}</td></tr>`).join("") + `</table>`;
+}
+async function salvarAvaliacao(ev) {
+  ev.preventDefault();
+  $("erro-aval").textContent = "";
+  try {
+    await Trilho.api("POST", `/api/pacientes/${$("paciente").value}/avaliacoes`, lerCampos($("form-aval")));
+    $("form-aval").reset(); $("form-aval").classList.add("oculto");
+    $("campos-aval-nova").innerHTML = camposAvaliacao();
+    carregarAvaliacoes();
+  } catch (e) { $("erro-aval").textContent = e.message; }
+}
+
+// ---------------------------------------------------------------- métricas dos sensores
+async function carregarMetricas() {
+  const pid = $("paciente").value, jogo = $("jogo").value;
+  const sel = $("metrica").value;
+  $("metrica").innerHTML = COLUNAS[jogo].concat(Object.keys(GUIA).filter(k => !COLUNAS[jogo].includes(k)))
+    .map(k => `<option value="${k}">${esc(GUIA[k].rotulo)}</option>`).join("");
+  if (sel && GUIA[sel]) $("metrica").value = sel;
+  partidas = pid ? (await Trilho.api("GET", `/api/pacientes/${pid}/historico?jogo=${jogo}`)).filter(p => p.metricas && Object.keys(p.metricas).length) : [];
+  tabela(); desenhar();
+}
+function problemas(p) {
+  const q = p.qualidade || {}, s = q.sincronia || {}, f = q.fusao || {}, out = [];
+  if (s.residuo_ms > 1) out.push(`sincronia ±${s.residuo_ms} ms`);
+  if (q.pacotes_nao_recuperados > 0) out.push(`${q.pacotes_nao_recuperados} pacotes perdidos`);
+  if (f.bordas_rejeitadas > 2) out.push(`${f.bordas_rejeitadas} marcos rejeitados`);
+  if (f.inconsistencias_gray > 0) out.push(`${f.inconsistencias_gray} leituras fora da sequência`);
+  if (q.erro_processamento) out.push("erro no processamento");
+  return out;
+}
+const fmt = v => v === null || v === undefined ? "—" : typeof v === "number" ? v.toLocaleString("pt-BR") : esc(v);
+function tabela() {
+  const cols = COLUNAS[$("jogo").value];
+  if (!partidas.length) { $("tabela").innerHTML = `<div class="vazio">Nenhuma partida com sensores neste jogo.</div>`; return; }
+  $("tabela").innerHTML = `<table><tr><th>Data</th><th>Braço</th><th title="Sessão e número da partida">Sessão</th>` +
+    cols.map(k => `<th title="${esc(GUIA[k].o_que_e + " " + GUIA[k].como_ler)}">${esc(GUIA[k].rotulo)}${GUIA[k].unidade ? ` (${esc(GUIA[k].unidade)})` : ""}${linkGuia(k, GUIA[k].rotulo)}</th>`).join("") +
+    `<th>Dados${linkGuia("qualidade", "Qualidade dos dados")}</th></tr>` +
+    partidas.slice().reverse().map(p => {
+      const pr = problemas(p);
+      const m = p.membro || "acometido";
+      return `<tr><td>${new Date(p.data).toLocaleString("pt-BR").slice(0, 17)}</td>
+        <td><span class="braco-tag ${m}">${m === "sadio" ? "Sadio" : "Acometido"}${p.lado_braco ? " · " + esc(p.lado_braco) : ""}</span></td>
+        <td>${p.sessao}.${p.numero}</td>` +
+        cols.map(k => `<td class="num">${fmt(p.metricas[k])}</td>`).join("") +
+        `<td>${pr.length ? `<span class="alerta" title="${esc(pr.join("; "))}">⚠</span>` : "ok"}</td></tr>`;
+    }).join("") + `</table>`;
+}
+function desenhar() {
+  const k = $("metrica").value, g = GUIA[k];
+  if (!g) return;
+  $("titulo-grafico").textContent = `Evolução — ${g.rotulo}${g.unidade ? ` (${g.unidade})` : ""}`;
+  $("explica").innerHTML = `<b>${esc(g.rotulo)}</b><p>${esc(g.o_que_e)}</p><p><i>Como ler:</i> ${esc(g.como_ler)}</p>
+    <span class="melhora ${g.melhora}">${TEXTO_MELHORA[g.melhora]}</span>
+    <p style="margin-top:10px"><a href="#guia-${k}" class="link-guia-texto" onclick="abrirGuia('${k}'); return false">Ver no guia das métricas →</a></p>`;
+  const pts = partidas.map(p => ({ d: new Date(p.data), v: p.metricas[k], m: p.membro || "acometido" })).filter(x => typeof x.v === "number");
+  const temSadio = pts.some(p => p.m === "sadio");
+  const cv = $("grafico"), ctx = cv.getContext("2d"), dpr = devicePixelRatio;
+  const w = cv.clientWidth, h = 260;
+  if (!w) return;
+  cv.width = w * dpr; cv.height = h * dpr; ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h);
+  ctx.font = "13px Segoe UI, sans-serif";
+  if (!pts.length) { ctx.fillStyle = "#667085"; ctx.textAlign = "center"; ctx.fillText("Sem dados desta métrica.", w / 2, h / 2); return; }
+  let lo = Math.min(...pts.map(p => p.v)), hi = Math.max(...pts.map(p => p.v));
+  if (lo === hi) { lo -= 1; hi += 1; }
+  const pad = (hi - lo) * 0.1; lo -= pad; hi += pad;
+  const x0 = 56, y0 = temSadio ? 32 : 14, larg = w - 76, alt = h - 48 - (temSadio ? 18 : 0);
+  const px = i => x0 + (pts.length === 1 ? larg / 2 : larg * i / (pts.length - 1));
+  const py = v => y0 + alt - alt * (v - lo) / (hi - lo);
+  ctx.strokeStyle = "#e3e7ef"; ctx.fillStyle = "#667085"; ctx.textAlign = "right";
+  for (let i = 0; i <= 4; i++) {
+    const v = lo + (hi - lo) * i / 4, y = py(v);
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + larg, y); ctx.stroke();
+    const faixa = Math.abs(hi - lo), casas = faixa < 0.05 ? 4 : faixa < 0.5 ? 3 : faixa < 5 ? 2 : 0;
+    ctx.fillText(v.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas }), x0 - 8, y + 4);
+  }
+  // braço acometido em azul (linha contínua); braço sadio em laranja (tracejada), no mesmo eixo do tempo
+  for (const m of ["acometido", "sadio"]) {
+    const serie = pts.map((p, i) => ({ p, i })).filter(o => o.p.m === m);
+    if (!serie.length) continue;
+    ctx.strokeStyle = COR_BRACO[m]; ctx.lineWidth = 2.5; ctx.setLineDash(m === "sadio" ? [7, 5] : []); ctx.beginPath();
+    serie.forEach((o, j) => j ? ctx.lineTo(px(o.i), py(o.p.v)) : ctx.moveTo(px(o.i), py(o.p.v))); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = COR_BRACO[m];
+    serie.forEach(o => { ctx.beginPath();
+      if (m === "sadio") ctx.rect(px(o.i) - 4, py(o.p.v) - 4, 8, 8); else ctx.arc(px(o.i), py(o.p.v), 4, 0, 7);
+      ctx.fill(); });
+  }
+  ctx.textAlign = "center";
+  const passo = Math.max(1, Math.ceil(pts.length / 10));
+  pts.forEach((p, i) => {
+    if (i % passo === 0) { ctx.fillStyle = "#667085"; ctx.fillText(p.d.toLocaleDateString("pt-BR").slice(0, 5), px(i), h - 10); }
+  });
+  if (temSadio) {
+    ctx.font = "12px Segoe UI, sans-serif"; ctx.textAlign = "left";
+    const media = m => { const v = pts.filter(p => p.m === m).map(p => p.v); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+    const f = v => v === null ? "—" : (Math.abs(v) < 10 ? v.toFixed(2) : Math.round(v)).toLocaleString("pt-BR");
+    ctx.fillStyle = COR_BRACO.acometido; ctx.beginPath(); ctx.arc(x0 + 5, 14, 5, 0, 7); ctx.fill();
+    ctx.fillStyle = "#344054"; ctx.fillText(`Braço acometido (média ${f(media("acometido"))})`, x0 + 14, 18);
+    const x2 = x0 + 14 + ctx.measureText(`Braço acometido (média ${f(media("acometido"))})`).width + 22;
+    ctx.fillStyle = COR_BRACO.sadio; ctx.fillRect(x2, 9, 10, 10);
+    ctx.fillStyle = "#344054"; ctx.fillText(`Braço sadio (média ${f(media("sadio"))})`, x2 + 16, 18);
+  }
+}
+window.addEventListener("resize", desenhar);
+iniciar();
+</script>
+</body>
+</html>
